@@ -1,0 +1,14 @@
+{
+  "$note": "What the shipped bed (house-ambient.m4a, next to this file) was made from: score.json as shipped, by ACE-Step 1.5 (score.py, then finish.py). pipeline/score.mjs uses the bed only while score.json still has these settings and the music models are not installed.",
+  "made_from": {
+    "prompt": "slow evolving ambient pads, airy warm drones, soft shimmering textures, spacious, ethereal, calm, beatless, instrumental ambient soundscape",
+    "key": "D Major",
+    "seed": 12,
+    "steps": 8,
+    "fade_in": 2,
+    "fade_out": 5,
+    "lufs": -18
+  },
+  "seconds": 480,
+  "encoding": "AAC 128 kb/s, 48 kHz stereo"
+}
