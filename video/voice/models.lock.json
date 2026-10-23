@@ -1,0 +1,9 @@
+{
+  "note": "commit hashes from HF API at download time (2026-10-10)",
+  "models": {
+    "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16": "7d3824abff87e49756bb0f83fb5411de75d160c4",
+    "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16": "a6eb4f68e4b056f1215157bb696209bc82a6db48",
+    "mlx-community/parakeet-tdt-0.6b-v3": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+    "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16": "52f4770fd9726457eae3d3b6aa92047a25a10776"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "note": "commit hashes from the HF API at download time (2026-10-11). code_sha256: per .py file the checkpoint ships (loaded by transformers with trust_remote_code), the accepted sha256s: [as shipped on HF at the pinned commit, as overwritten by the pinned ace-step package on first load (identical to its acestep/models/turbo copies)]. score.py refuses to run if a file matches neither.",
+  "package": {
+    "ace-step": "https://github.com/ACE-Step/ACE-Step-1.5 @ ca1e85fe9430179831e6bc6be790c332190a3866 (MIT)"
+  },
+  "models": {
+    "ACE-Step/Ace-Step1.5": {
+      "commit": "19671f406d603126926c1b7e2adc169acbcade22",
+      "dir": "ACE-Step-1.5",
+      "license": "MIT",
+      "code_sha256": {
+        "acestep-v15-turbo/configuration_acestep_v15.py": [
+          "b89870c5c7a7ce060eb0bcdbb5ffc86b0b1a324ca325a26be552ea1b42496dc5",
+          "5f15aa79fe793bba3c00b6992dd193a269954950603d5031ecd7703b0fa69da1"
+        ],
+        "acestep-v15-turbo/modeling_acestep_v15_turbo.py": [
+          "c1ab0dd547124fee7ada449b2b86eae8201dc7d15889932643bbb67e3c982444",
+          "71b22e01b490bd9e149e4c0c5da2e1f512126f3ab3316e0ae97779af84d19512"
+        ]
+      }
+    }
+  }
+}

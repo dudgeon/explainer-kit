@@ -1,0 +1,21 @@
+{
+  "name": "explainer-kit-video",
+  "private": true,
+  "description": "Explainer Kit: builds a narrated explainer film from a script",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "studio": "remotion studio src/index.ts --public-dir=build/public",
+    "lint": "node lint.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.529"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}

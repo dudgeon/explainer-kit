@@ -1,0 +1,18 @@
+{
+  "$note": "The house narrator: a synthetic voice designed with Qwen3-TTS VoiceDesign from a text description (no human recording) and frozen as a reference clip. Every line is cloned from it with the Base model, then sped up by `tempo` (atempo, pitch unchanged).",
+  "engine": "qwen-clone",
+  "mode": "clone",
+  "ref_wav": "house/reference.wav",
+  "ref_text": "Last weekend I finally walked to the market by the river. The air was cool, and the bread smelled wonderful. I stayed far longer than planned. Have you ever done that?",
+  "seed": 12,
+  "tempo": 1.1,
+  "said": {},
+  "designed_from": {
+    "description": "a warm, medium-low baritone man in his forties, friendly and upbeat, bright and engaged, smiling as he speaks, a little more energy, natural rises and falls, talking to a friend, not an advert",
+    "seed": 14,
+    "model": "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16",
+    "model_revision": "7d3824abff87e49756bb0f83fb5411de75d160c4"
+  },
+  "sha256": "0b0f125e0cb36e9af223db5bfd60c514ab2177c772e950dbb016aba24beb948d",
+  "licence": "Synthetic audio; offered as CC0 1.0 subject to the usage notice in NOTICES.md."
+}

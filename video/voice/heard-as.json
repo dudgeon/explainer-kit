@@ -1,0 +1,75 @@
+{
+  "$note": "Speech recognition mishears product names. Each heard word on the right is read as the name on the left before scoring. Add one when a correct line fails on a name.",
+  "claude": [
+    "clawed",
+    "cloud",
+    "claud",
+    "clod"
+  ],
+  "v": [
+    "vee"
+  ],
+  "c l i": [
+    "cli"
+  ],
+  "over fitting": [
+    "overfitting"
+  ],
+  "versus": [
+    "vs"
+  ],
+  "any time": [
+    "anytime"
+  ],
+  "every day": [
+    "everyday"
+  ],
+  "some time": [
+    "sometime"
+  ],
+  "a lot": [
+    "alot"
+  ],
+  "mid size": [
+    "midsize"
+  ],
+  "stand up": [
+    "standup"
+  ],
+  "work trees": [
+    "worktrees"
+  ],
+  "director": [
+    "directors"
+  ],
+  "codebase": [
+    "code base"
+  ],
+  "githubs": [
+    "github"
+  ],
+  "groomed": [
+    "groom"
+  ],
+  "codebases": [
+    "code bases"
+  ],
+  "id": [
+    "i d"
+  ],
+  "datacenter": [
+    "data center"
+  ],
+  "bee": [
+    "b"
+  ],
+  "why": [
+    "y"
+  ],
+  "re read": [
+    "reread"
+  ],
+  "requirements": [
+    "requirement"
+  ]
+}
