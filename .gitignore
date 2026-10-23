@@ -1,0 +1,35 @@
+# Build output and caches
+video/node_modules/
+video/.cache/
+video/build/
+video/out/
+**/.venv*/
+node_modules/
+.DS_Store
+
+# Own-voice material never enters the repo
+voice/takes/
+voice/runs/
+voice/voices/*
+!voice/voices/README.md
+
+# Per-session local settings (they hold absolute paths)
+.claude/settings.local.json
+
+# Audio and weights: ignored everywhere, with an explicit allowlist (scripts/check-repo.sh enforces the same list)
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.flac
+*.ogg
+*.caf
+*.aif
+*.aiff
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.npz
+!video/voice/house/reference.wav
+!video/score/beds/house-ambient.m4a
