@@ -1,17 +1,19 @@
 #!/usr/bin/env node
-// The explainers' script Docs are two columns (Narration | On screen) per scene, not the bullets pipeline/script.mjs reads.
-// This turns a Markdown export of such a Doc into films/<name>/script.md: each narration cell becomes one voiced bullet
+// A project's script (projects/<name>/script.md) is two columns (Narration | On screen) per scene, not the bullets
+// pipeline/script.mjs reads. This turns it into films/<name>/script.md: each narration cell becomes one voiced bullet
 // (split at a sentence when it runs past MAX words, so long lines aren't rushed), and the visuals column becomes the
-// scene's Shot: note, line by line. A "## The voice" table (Written | Said) in the Doc, or the film's existing one, is kept.
-//   node pipeline/sync-table.mjs <export.md> --film sdd [--write]
-import {existsSync, readFileSync, writeFileSync} from 'node:fs';
-import {dirname, join} from 'node:path';
+// scene's Shot: note, line by line. A "## The voice" table (Written | Said) in the source, or the film's existing one,
+// is kept. With --write it makes films/<name>/ if it isn't there yet.
+//   node pipeline/sync-table.mjs ../projects/<name>/script.md --film <name> [--write]
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 const [src] = process.argv.slice(2);
 const film = process.argv[process.argv.indexOf('--film') + 1];
-if (!src || !film) { console.error('usage: node pipeline/sync-table.mjs <export.md> --film <name> [--write]'); process.exit(1); }
+if (!src || !film || film.startsWith('--')) { console.error('usage: node pipeline/sync-table.mjs <script.md> --film <name> [--write]'); process.exit(1); }
+if (!/^[a-z0-9][a-z0-9-]*$/.test(film)) { console.error(`"${film}" isn't a film name (lowercase letters, digits, dashes)`); process.exit(1); }
 const MAX = 22;
 const md = readFileSync(src, 'utf8').split('\n');
 const plain = (s) => s.replace(/\*\*|\*|`|\\/g, '').trim();
@@ -50,6 +52,9 @@ const body = scenes.map((s) => {
   const shot = s.rows.map((r, i) => `Line ${i + 1}: ${r.see}`).join(' ');
   return `### ${s.head}\n\n${bullets}\n\nShot: ${shot}`;
 }).join('\n\n');
-const text = `# ${film} script\n<!-- Written by pipeline/sync-table.mjs from ${src} on ${new Date().toISOString().slice(0, 10)}; edit the Doc, not this file. -->\n\n## The voice\n\n${voiceTable}\n\n## Scenes\n\n${body}\n`;
-if (process.argv.includes('--write')) { writeFileSync(out, text); console.log(`wrote ${out}: ${scenes.length} scenes`); }
+// Only the source's file name and its folder's name go into the generated file: a full path would carry the writer's
+// home folder into the repo.
+const source = `${basename(dirname(resolve(src)))}/${basename(src)}`;
+const text = `# ${film} script\n<!-- Written by pipeline/sync-table.mjs from ${source} on ${new Date().toISOString().slice(0, 10)}; edit that, not this file. -->\n\n## The voice\n\n${voiceTable}\n\n## Scenes\n\n${body}\n`;
+if (process.argv.includes('--write')) { mkdirSync(dirname(out), {recursive: true}); writeFileSync(out, text); console.log(`wrote ${out}: ${scenes.length} scenes`); }
 else console.log(text);

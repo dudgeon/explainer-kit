@@ -1,6 +1,6 @@
 // The background score: one ambient bed at least the length of the film, generated locally (ACE-Step 1.5, video/score/),
 // finished to sit under speech, and checked by speech recognition so no word-like sounds slip in. Cached by
-// everything that shapes it. The film mixes it from the voice timeline (src/scenes/Film.tsx, ScoreBed).
+// everything that shapes it. The film mixes it from the voice timeline (src/scenes/Film.tsx, scoreGain).
 import {spawnSync} from 'node:child_process';
 import {copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
@@ -17,7 +17,7 @@ export function scoreBed({here, cache, pub, duration, voiceWavs, log}) {
   const cfg = JSON.parse(readFileSync(join(dir, 'score.json'), 'utf8'));
   // The bed is cut to the film by the film itself (its fade-out is the score's gain, Film.tsx), so any bed at least as
   // long as the film will do: a cached one is reused, and a new one is made at least 8 minutes long, in whole minutes,
-  // so a change in the film's length doesn't make new music under review (codebase review V2).
+  // so a change in the film's length doesn't make new music under review.
   const need = Math.ceil(duration + 1);
   const scripts = ['models.lock.json', 'score.py', 'finish.py'].map((f) => fileSha(join(dir, f)));
   const family = sha('bed', cfg.prompt, cfg.key, cfg.seed, cfg.steps, cfg.fade_in, cfg.fade_out, cfg.lufs, ...scripts).slice(0, 16);
