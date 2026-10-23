@@ -27,11 +27,47 @@ def num_words(n):
     if n < 10000 and n % 1000 == 0: return ONES[n // 1000] + " thousand"
     return " ".join(ONES[int(c)] for c in str(n))
 
+ORD = {"one": "first", "two": "second", "three": "third", "five": "fifth", "eight": "eighth", "nine": "ninth", "twelve": "twelfth"}
+
+def ordinal(n):
+    w = num_words(n).split()
+    w[-1] = ORD.get(w[-1], w[-1][:-1] + "ieth" if w[-1].endswith("y") else w[-1] + "th")
+    return " ".join(w)
+
+def number(n):
+    """How a number in a script is usually read aloud. Four-digit numbers from 1100 to 2099 read as years ('nineteen
+    eighty two', 'nineteen hundred', 'two thousand five'): the speech recogniser writes a spoken year as digits."""
+    if 1100 <= n <= 2099 and n % 1000:
+        hi, lo = divmod(n, 100)
+        if 2000 <= n < 2010: return "two thousand " + ONES[n - 2000]
+        return num_words(hi) + (" hundred" if lo == 0 else (" oh " + ONES[lo] if lo < 10 else " " + num_words(lo)))
+    return num_words(n)
+
 def norm(text):
-    t = text.lower().replace("&", " and ").replace("%", " percent")
+    t = text.lower().replace("&", " and ").replace("%", " percent").replace("’", "'")
+    # The recogniser writes what was said as digits: "2.5 cups", "BA271", "the 4th", "100", "206". Spell them the way a
+    # reader says them, so a well-read line is not flagged.
+    t = re.sub(r"\b(\d+)\.5\b", r"\1 and a half", t)
+    t = re.sub(r"(?<=\d)\.(?=\d)", " point ", t)
     t = re.sub(r"(?<=[a-z0-9])\.(?=[a-z0-9])", " dot ", t)
-    t = re.sub(r"(\d+)", lambda m: " " + num_words(int(m.group(1))) + " ", t)
+    t = re.sub(r"\b([a-z]+)(\d+)\b", lambda m: " ".join(m.group(1)) + " " + " ".join(ONES[int(c)] for c in m.group(2)), t)  # flight BA271
+    t = re.sub(r"\b(\d+)(st|nd|rd|th)\b", lambda m: " " + ordinal(int(m.group(1))) + " ", t)
+    t = re.sub(r"(\d+)", lambda m: " " + number(int(m.group(1))) + " ", t)
     return re.sub(r"[^a-z' ]", " ", t.replace("-", " ")).replace("'", "").split()
+
+def spoken_numbers(toks):
+    """On a token stream (the recogniser's words are normalised one at a time, so this cannot live in norm()):
+    "a hundred" is heard as "100" (one hundred), and "two hundred and six" as "206" (two hundred six).
+    toks: a list of tokens, or of (token, payload) pairs."""
+    tok = lambda i: toks[i][0] if isinstance(toks[i], tuple) else toks[i]
+    out = []
+    for i in range(len(toks)):
+        t = tok(i)
+        if t == "and" and i and tok(i - 1) in ("hundred", "thousand"): continue
+        if t == "a" and i + 1 < len(toks) and tok(i + 1) in ("hundred", "thousand"):
+            out.append(("one",) + toks[i][1:] if isinstance(toks[i], tuple) else "one"); continue
+        out.append(toks[i])
+    return out
 
 def merge_letters(toks):
     """Runs of >=2 single letters ('p r d') become one token ('prd'); returns [(tok, first_i, last_i)]."""
@@ -144,10 +180,52 @@ def hold_gpu_lock():
     os.execv("/bin/bash", ["/bin/bash", str(GPU_LOCK_SH), "--shared", "kit-voice-check",
                            "env", "GPU_LOCK_HELD=1", sys.executable, "-I", str(Path(__file__).resolve()), *sys.argv[1:]])
 
+_asr = None
 def transcribe(wav):
-    from parakeet_mlx import from_pretrained
-    res = from_pretrained(str(MODEL)).transcribe(wav, chunk_duration=120.0, overlap_duration=10.0)
+    global _asr
+    if _asr is None:
+        from parakeet_mlx import from_pretrained
+        _asr = from_pretrained(str(MODEL))
+    res = _asr.transcribe(str(wav), chunk_duration=120.0, overlap_duration=10.0)
     return words_of(res)
+
+def tokens(words):
+    """ASR words -> (hyp tokens, token -> (first word, last word), header text, words in the header).
+    The header is the take number said at the start: "Take five", "Take H one" (heard as "Take H1", or "Takes seven")."""
+    raw_t = spoken_numbers([(t, i) for i, w in enumerate(words) for t in norm(w["word"])])
+    hyp_m = merge_letters([t for t, _ in raw_t])
+    hyp = [t for t, _, _ in hyp_m]
+    hyp_w = [(raw_t[f][1], raw_t[l][1]) for _, f, l in hyp_m]
+    isnum = lambda s: s in ONES or s in TENS or s.isdigit()
+    header, n = "", 0
+    if len(hyp) > 1 and hyp[0] in ("take", "takes"):
+        if isnum(hyp[1]): n = 2
+        elif len(hyp) > 2 and hyp[1] in ("h", "t") and isnum(hyp[2]): n = 3
+    if n:
+        header = " ".join(hyp[:n])
+        last_word = hyp_w[n - 1][1]
+        return hyp, hyp_w, header, last_word + 1
+    return hyp, hyp_w, "", 0
+
+def rescue(x, sr, words, hyp_w, matches, dur):
+    """Transcribe again, on its own, the stretch of audio where each missing line should be (between the lines found
+    either side of it). Returns the new words, with times in the take, that do not overlap words already heard."""
+    import tempfile
+    found = [(k, m) for k, m in enumerate(matches) if m]
+    new = []
+    for k, m in enumerate(matches):
+        if m: continue
+        before = [mm for kk, mm in found if kk < k]; after = [mm for kk, mm in found if kk > k]
+        a = words[hyp_w[before[-1]["e"] - 1][1]]["end"] if before else 0.0
+        b = words[hyp_w[after[0]["s"]][0]]["start"] if after else dur
+        if b - a < 1.0: continue
+        with tempfile.NamedTemporaryFile(suffix=".wav") as f:
+            sf.write(f.name, x[int(a * sr):int(b * sr)], sr, subtype="PCM_24")
+            got = transcribe(f.name)
+        for w in got:
+            w = dict(w, start=w["start"] + a, end=w["end"] + a)
+            if not any(o["start"] < w["end"] and w["start"] < o["end"] for o in words + new): new.append(w)
+    return new
 
 def words_of(res):
     words = []
@@ -204,17 +282,23 @@ def main():
     L = levels(x, sr, wt)
     peak = db(np.max(np.abs(x))); clipped = int(np.sum(np.abs(x) >= 0.999))
 
-    # tokens: hyp tokens carry the ASR word index range they came from
-    raw_t = [(t, i) for i, w in enumerate(words) for t in norm(w["word"])]
-    hyp_m = merge_letters([t for t, _ in raw_t])
-    hyp = [t for t, _, _ in hyp_m]
-    hyp_w = [(raw_t[f][1], raw_t[l][1]) for _, f, l in hyp_m]       # token -> (first word, last word)
-    header = ""
-    if len(hyp) > 1 and hyp[0] == "take" and (hyp[1] in ONES or hyp[1] in TENS or hyp[1].isdigit()):
-        header = f"{hyp[0]} {hyp[1]}"
-    ref = [[t for t, _, _ in merge_letters(norm(l))] for l in lines]
+    ref = [[t for t, _, _ in merge_letters(spoken_numbers(norm(l)))] for l in lines]
+    hyp, hyp_w, header, header_words = tokens(words)
+    rescued = 0
+    if tid != "T00":
+        # The recogniser sometimes drops a whole sentence from a long take (seen with a clean, well-read line after a
+        # pause). Before calling a line missing, listen again to just the gap where it should be.
+        ms, _ = match_lines(ref, hyp)
+        extra_words = rescue(x, sr, words, hyp_w, ms, dur)
+        if extra_words:
+            rescued = len(extra_words)
+            words = sorted(words + extra_words, key=lambda w: w["start"])
+            wt = [(w["start"], w["end"]) for w in words]
+            L = levels(x, sr, wt)
+            hyp, hyp_w, header, header_words = tokens(words)
 
     notes, flagged, missing, retaken = [], [], [], []
+    if rescued: notes.append(f"the first listen missed {rescued} word(s); a second listen to the gap found them")
     seg_dir = TAKES / "seg" / tid
     shutil.rmtree(seg_dir, ignore_errors=True); seg_dir.mkdir(parents=True)
 
@@ -283,7 +367,7 @@ def main():
             for t in range(mt["s"], mt["e"]): covered.update(range(hyp_w[t][0], hyp_w[t][1] + 1))
     extras, run = [], []
     for i in range(len(words) + 1):
-        if i < len(words) and i not in covered and not (header and i < 2): run.append(i)
+        if i < len(words) and i not in covered and not (header and i < header_words): run.append(i)
         else:
             if len(run) >= 2 and tid != "T00": extras.append(dict(at=round(words[run[0]]["start"], 1), text=" ".join(words[j]["word"] for j in run)))
             run = []

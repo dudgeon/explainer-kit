@@ -10,7 +10,7 @@ from scipy.signal import resample_poly
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from check_take import norm, MODEL as ASR_MODEL, best_window   # text normalisation shared with take checks
+from check_take import norm, spoken_numbers, MODEL as ASR_MODEL, best_window   # text normalisation shared with take checks
 SEG = ROOT / "takes" / "seg"
 ECAPA = Path(os.environ.get("KIT_VOICE_MODELS") or os.environ.get("KIT_MODELS") or Path.home() / "Library/Caches/explainer-kit/models") / "spkrec-ecapa-voxceleb"   # ./setup.sh --eval fetches it
 
@@ -59,7 +59,7 @@ def transcribe(path):
     return _asr.transcribe(str(path)).text
 
 def wer(ref, hyp):
-    r, h = norm(ref), norm(hyp)
+    r, h = spoken_numbers(norm(ref)), spoken_numbers(norm(hyp))
     if not r: return None
     n, m = len(r), len(h)
     d = list(range(m + 1))
