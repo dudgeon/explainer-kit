@@ -1,0 +1,49 @@
+{
+ "$note": "Written by films/example/shots.mjs; edit that, not this.",
+ "S0": {
+  "kind": "drawn",
+  "scene": "paper-card",
+  "thumbnail": -0.5,
+  "leadIn": 0.8,
+  "tail": 1.2,
+  "events": {
+   "mark": {
+    "line": 1,
+    "word": "script"
+   }
+  },
+  "requires": [
+   {
+    "what": "Line 1: the title draws in, the accent rule draws on \"script\"; the settled card is the poster",
+    "by": [
+     "src:src/scenes/house/PaperCard.tsx",
+     "event:mark"
+    ]
+   }
+  ],
+  "shotSha": "9c98fdc6e25a"
+ },
+ "S1": {
+  "kind": "drawn",
+  "scene": "paper-card",
+  "transitionIn": "paper-carry",
+  "tail": 1.2,
+  "events": {
+   "mark": {
+    "line": 1,
+    "word": "picture"
+   }
+  },
+  "requires": [
+   {
+    "what": "Line 1: the paper carries over, the new title replaces the last, the rule draws on \"picture\"",
+    "by": [
+     "src:src/scenes/house/PaperCard.tsx",
+     "transition",
+     "event:mark"
+    ]
+   }
+  ],
+  "shotSha": "9e098b9ac834"
+ }
+}
