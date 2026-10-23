@@ -118,7 +118,10 @@ if [ "${KIT_PREFLIGHT_SIZE_ONLY:-}" = 1 ]; then echo; echo "preflight: ok. $tier
 # Enough memory installed; is enough of it free right now?
 short=""
 lt "$avail_gib" "$need" && short="only $avail_gib GiB is free or reclaimable and this task wants about $need GiB"
-lt 2.0 "$swap_used_gib" && short="${short:+$short; }$swap_used_gib GiB of swap is already in use (over 2 GiB)"
+# Swap that was used earlier and has not drained is not pressure now: it only blocks when memory is also short
+# or the system reports pressure. Otherwise it is a warning.
+swap_note=""
+lt 2.0 "$swap_used_gib" && swap_note="$swap_used_gib GiB of swap is in use from earlier; it does not drain until apps restart, so this is a note, not a stop"
 [ "$level" -ge 2 ] 2>/dev/null && short="${short:+$short; }memory pressure is $pressure"
 if [ -n "$short" ]; then
   echo; echo "preflight: WAIT. $short."
@@ -130,4 +133,5 @@ if [ -n "$short" ]; then
   exit 3
 fi
 echo; echo "preflight: ok. $tier GB tier, $avail_gib GiB free for a task that wants about $need GiB."
+[ -n "$swap_note" ] && echo "  note: $swap_note."
 exit 0
