@@ -33,3 +33,7 @@ voice/voices/*
 *.npz
 !video/voice/house/reference.wav
 !video/score/beds/house-ambient.m4a
+
+# The kit's own compute lock (default location)
+.gpu.lock
+.gpu.lock.*
