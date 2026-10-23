@@ -10,7 +10,7 @@ ALLOW_BINARY='^(video/voice/house/reference\.wav|video/score/beds/house-ambient\
 BINARY_EXT='\.(wav|mp3|m4a|aac|flac|ogg|caf|aiff?|safetensors|pt|pth|bin|ckpt|npz)$'
 LIMIT=$((12 * 1024 * 1024))
 # Names and paths that must never appear in shipped files (case-insensitive).
-NAMES='/Users/[^/ ]+/|~/repos/|claude-home|(^|[^a-z])geoff|geoff[-_]|(^|[^a-z])duo|DL-[0-9]+|T00_best|/private/tmp/claude-|session_01'
+NAMES='/Users/[^/ ]+/|~/repos/|claude-home|(^|[^a-z])geoff|geoff[-_]|(^|[^a-z])duo([^a-z]|$)|DL-[0-9]+|T00_best|/private/tmp/claude-|session_01'
 SECRETS='(hf_[A-Za-z0-9]{30,}|ghp_[A-Za-z0-9]{30,}|sk-[A-Za-z0-9]{30,}|BEGIN (RSA|OPENSSH) PRIVATE KEY)'
 # Files that legitimately mention the patterns, or are build notes that are not shipped.
 SKIP='^(scripts/check-repo\.sh|PLAN\.md|REQUIREMENTS\.md|RESEARCH\.md|REVIEW\.md|DECISIONS\.md|WP1a-couplings\.txt)$'
