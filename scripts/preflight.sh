@@ -2,9 +2,9 @@
 # Memory preflight: can this Mac run <task> right now?
 #   scripts/preflight.sh <task>
 # Tasks: voice-house   narrate with the house voice (Qwen3-TTS, the light path)
-#        voice-quick   narrate with a quick clone of your own voice (same engine, your reference clip)
+#        voice-quick   narrate with a quick clone of your own voice (same engine, your reference clip; ./setup.sh --voice-quick)
 #        voice-voxcpm  narrate with a fine-tuned VoxCPM2 voice
-#        train-full    fine-tune your voice (LoRA on VoxCPM2)
+#        train-full    fine-tune your voice (LoRA on VoxCPM2; ./setup.sh --voice-train, 32 GB or larger)
 #        score         generate a music bed (ACE-Step; only after ./setup.sh --music)
 #        render        render the film (Remotion)
 # Prints what it measured, then one verdict. Exit codes:
@@ -12,6 +12,7 @@
 #   3  not enough free memory right now: the message lists what to quit, then run it again
 #   64 usage
 # Test hooks (GiB, whole numbers allowed with decimals): KIT_FAKE_MEMSIZE, KIT_FAKE_AVAILABLE, KIT_FAKE_SWAP_USED.
+# KIT_PREFLIGHT_SIZE_ONLY=1 checks the size of the Mac only, not free memory (setup.sh --voice-train uses it).
 # KIT_ALLOW_UNPROVEN=1 lets a 24 GB Mac attempt train-full anyway (the 24 GB numbers are an estimate, see below).
 set -u
 
@@ -90,7 +91,7 @@ if [ "$task" = voice-quick ]; then echo; printf '%s\n' "$QUICK_WARNING"; fi
 if lt "$mem_gib" "$min"; then
   case "$task:$tier" in
     train-full:16) refuse "Fine-tuning needs a 32 GB or larger Mac, and this one has 16 GB." \
-"  What a 16 GB Mac gets is the quick clone (task voice-quick): one short reading of your voice, ready in minutes.
+"  What a 16 GB Mac gets is the quick clone (task voice-quick, set up with ./setup.sh --voice-quick): one short reading of your voice, ready in minutes.
   $QUICK_WARNING
   The house voice (voice-house) always works too." ;;
     train-full:24) : ;; # handled below
@@ -105,11 +106,14 @@ if [ "$task" = train-full ] && [ "$tier" = 24 ]; then
   msg="24 GB Mac: fine-tuning is not offered by default. The numbers are an estimate, not yet measured on a 24 GB Mac (WP8 replaces them):
   a fine-tune used 13.4 to 15.5 GiB of GPU memory and 17.5 GB for the whole process on a 32 GB Mac, which leaves a 24 GB
   Mac little room for macOS, the browser and the render, and it may start swapping (training then slows more than 3x).
-  What works well on 24 GB: the house voice and the quick clone, and rendering.
+  What works well on 24 GB: the house voice, the quick clone (./setup.sh --voice-quick) and rendering.
   $QUICK_WARNING
   To try the fine-tune anyway, quit everything else and run again with KIT_ALLOW_UNPROVEN=1."
   if [ "${KIT_ALLOW_UNPROVEN:-}" = 1 ]; then echo; echo "preflight: warning. $msg"; else refuse "$msg" ""; fi
 fi
+
+# Setup uses this to gate --voice-train on the size of the Mac alone, whatever is running right now.
+if [ "${KIT_PREFLIGHT_SIZE_ONLY:-}" = 1 ]; then echo; echo "preflight: ok. $tier GB tier is big enough for this task."; exit 0; fi
 
 # Enough memory installed; is enough of it free right now?
 short=""

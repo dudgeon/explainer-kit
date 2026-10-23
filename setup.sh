@@ -3,7 +3,12 @@
 #   ./setup.sh                 base: checks your tools, makes the narration Python environment, installs the video
 #                              packages, gets Chrome for the renderer, and fetches the house-voice and
 #                              speech-check models (about 6.5 GB)
-#   ./setup.sh --voice         also set up narrating and training with your own voice (voice/setup.sh)
+#   ./setup.sh --voice-quick   also what the quick clone of your own voice needs (any Mac, 16 GB is fine): the
+#                              take checker's environment (voice/.venv-eval) and the Parakeet and ECAPA models.
+#                              Does not fetch VoxCPM2 or its training environment.
+#   ./setup.sh --voice-train   also fine-tuning your voice: adds the VoxCPM2 model (about 5 GB) and its training
+#                              environment (about 2.6 GB of venvs in all). 32 GB or larger Macs only; setup
+#                              refuses on a smaller one (scripts/preflight.sh train-full says why). Includes --voice-quick.
 #   ./setup.sh --music         also set up making your own music beds (ACE-Step; about 9.4 GB of models)
 #   ./setup.sh --from DIR      clone models you already have on this Mac from DIR (APFS `cp -c`: instant, no extra
 #                              disk) instead of downloading them
@@ -16,14 +21,16 @@
 set -u
 root="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export KIT_MODELS="${KIT_MODELS:-$HOME/Library/Caches/explainer-kit/models}"
-voice=0; music=0; check=0; from="${KIT_MODELS_FROM:-}"; only=""
+vquick=0; vtrain=0; music=0; check=0; from="${KIT_MODELS_FROM:-}"; only=""
 while [ $# -gt 0 ]; do case "$1" in
-  --voice) voice=1; shift ;;
+  --voice-quick) vquick=1; shift ;;
+  --voice-train) vtrain=1; vquick=1; shift ;;
+  --voice) echo "setup: --voice is now two options: --voice-quick (quick clone, any Mac) and --voice-train (fine-tuning, 32 GB or larger)" >&2; exit 2 ;;
   --music) music=1; shift ;;
   --check|--dry-run) check=1; shift ;;
   --from) from="${2:?--from needs a folder}"; shift 2 ;;
   --only) only="${2:?--only needs a list of steps}"; shift 2 ;;
-  -h|--help) sed -n 2,16p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n 2,22p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "setup: unknown option $1 (see ./setup.sh --help)" >&2; exit 2 ;; esac; done
 [ -z "$from" ] || from="$(cd -P "$from" 2>/dev/null && pwd)" || { echo "setup: --from folder not found" >&2; exit 2; }
 
@@ -70,6 +77,7 @@ _mkvenv() {
 if want venv; then
   say "python environments"
   venv video/voice/.venv video/voice/requirements.txt
+  [ $vquick = 1 ] && venv voice/.venv-eval voice/requirements/eval.txt
   [ $music = 1 ] && venv video/score/.venv video/score/requirements.txt
 fi
 
@@ -139,14 +147,34 @@ if want models; then
 fi
 
 # ---- 5. Your own voice ------------------------------------------------------------------------------------------------
-if [ $voice = 1 ] && [ -z "$only" ]; then
-  say "your own voice"
-  if [ -x "$root/voice/setup.sh" ]; then
-    vargs=(); [ -n "$from" ] && vargs+=(--from "$from")
-    if [ $check = 1 ]; then say "  would: voice/setup.sh ${vargs[*]:-}  (models to $KIT_MODELS)"; todo=$((todo + 1))
-    else KIT_MODELS="$KIT_MODELS" "$root/voice/setup.sh" "${vargs[@]+"${vargs[@]}"}" || exit $?; fi
+# Quick clone: the take checker (voice/.venv-eval, made above) and the models it uses. voice/setup.sh cannot do this
+# alone: it always builds the VoxCPM2 environment too, so the quick path runs voice/tools/fetch_models.py itself.
+_voice_eval_models() {
+  local a=(--models "$KIT_MODELS" --set eval); [ -n "$from" ] && a+=(--from "$from")
+  "$root/voice/.venv-eval/bin/python" -I "$root/voice/tools/fetch_models.py" "${a[@]}"
+}
+if [ $vquick = 1 ] && [ -z "$only" ]; then
+  say "your own voice: quick clone (Parakeet and ECAPA for the take checker)"
+  if [ ! -f "$root/voice/tools/fetch_models.py" ]; then say "  voice/ is not in this copy of the kit; nothing to do."
+  elif [ -f "$KIT_MODELS/spkrec-ecapa-voxceleb/.kit-revision" ] && [ -f "$KIT_MODELS/parakeet-tdt-0.6b-v3/.kit-revision" ]; then
+    say "  spkrec-ecapa-voxceleb, parakeet-tdt-0.6b-v3: present"
+  else act "fetch spkrec-ecapa-voxceleb and parakeet-tdt-0.6b-v3 (checked against voice/models.lock.json)" _voice_eval_models || exit $?; fi
+fi
+# Fine-tuning: VoxCPM2 and the training environment, through voice/setup.sh. 32 GB or larger only.
+if [ $vtrain = 1 ] && [ -z "$only" ]; then
+  say "your own voice: fine-tuning (VoxCPM2)"
+  if ! KIT_PREFLIGHT_SIZE_ONLY=1 "$root/scripts/preflight.sh" train-full > "${TMPDIR:-/tmp}/kit-preflight.$$" 2>&1; then
+    sed 's/^/  /' "${TMPDIR:-/tmp}/kit-preflight.$$" | sed -n '/preflight: NO/,$p'; rm -f "${TMPDIR:-/tmp}/kit-preflight.$$"
+    say "  setup: skipping --voice-train on this Mac. The quick clone (--voice-quick) works here."
+    [ $check = 1 ] || exit 2
   else
-    say "  voice/setup.sh is not in this copy of the kit yet; nothing to do."
+    rm -f "${TMPDIR:-/tmp}/kit-preflight.$$"
+    if [ ! -x "$root/voice/setup.sh" ]; then say "  voice/setup.sh is not in this copy of the kit; nothing to do."
+    else
+      vargs=(--eval); [ -n "$from" ] && vargs+=(--from "$from")
+      if [ $check = 1 ]; then say "  would: voice/setup.sh ${vargs[*]}  (VoxCPM2 and the training venv; models to $KIT_MODELS)"; todo=$((todo + 1))
+      else KIT_MODELS="$KIT_MODELS" "$root/voice/setup.sh" "${vargs[@]}" || exit $?; fi
+    fi
   fi
 fi
 
