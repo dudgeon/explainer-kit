@@ -172,7 +172,11 @@ if [ $vtrain = 1 ] && [ -z "$only" ]; then
     if [ ! -x "$root/voice/setup.sh" ]; then say "  voice/setup.sh is not in this copy of the kit; nothing to do."
     else
       vargs=(--eval); [ -n "$from" ] && vargs+=(--from "$from")
-      if [ $check = 1 ]; then say "  would: voice/setup.sh ${vargs[*]}  (VoxCPM2 and the training venv; models to $KIT_MODELS)"; todo=$((todo + 1))
+      vreq="$(shasum -a 256 "$root/voice/requirements/voxcpm.txt" | cut -d' ' -f1)"
+      if [ -x "$root/voice/.venv/bin/python" ] && [ "$(cat "$root/voice/.venv/.requirements.sha256" 2>/dev/null)" = "$vreq" ] \
+         && [ -f "$KIT_MODELS/VoxCPM2/.kit-revision" ]; then
+        say "  voice/.venv: up to date; VoxCPM2: present ($(cat "$KIT_MODELS/VoxCPM2/.kit-revision"))"
+      elif [ $check = 1 ]; then say "  would:voice/setup.sh ${vargs[*]}  (VoxCPM2 and the training venv; models to $KIT_MODELS)"; todo=$((todo + 1))
       else KIT_MODELS="$KIT_MODELS" "$root/voice/setup.sh" "${vargs[@]}" || exit $?; fi
     fi
   fi
