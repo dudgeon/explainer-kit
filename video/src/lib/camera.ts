@@ -1,5 +1,5 @@
-// A camera over a still capture. Rects are in the capture's points; the capture is `scale` px per point.
-// Pure functions of time: no state carried between frames (style/motion.md).
+// A camera over a drawn page (the page-travel move, a push in on a detail): keyframed rects in the page's own units.
+// Pure functions of time: no state carried between frames.
 
 export type Rect = {x: number; y: number; w: number; h: number};
 export type Key = {t: number; rect: Rect};
