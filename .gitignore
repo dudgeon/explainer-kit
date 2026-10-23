@@ -3,6 +3,8 @@ video/node_modules/
 video/.cache/
 video/build/
 video/out/
+# Scratch folders under video/src (lift-from copies used while building the kit; never bundled or committed)
+video/src/**/_*/
 **/.venv*/
 node_modules/
 .DS_Store
