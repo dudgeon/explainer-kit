@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pick a look</title>
+<!-- The template for style/picker.html, which pipeline/style-frames.mjs writes with the candidates' stills inside it.
+     One local file: no network, no fonts or scripts fetched. Picks are reported in chat, not saved anywhere. -->
+<style>
+  :root { --bg: #f4f2ee; --card: #ffffff; --ink: #1e1d1b; --muted: #6f6b64; --line: #dedad2; --pick: #1e1d1b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --card: #20201e; --ink: #ecebe7; --muted: #a29e96; --line: #34332f; --pick: #ecebe7; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 4px 0 2px; }
+  .lede { color: var(--muted); margin: 0 0 16px; max-width: 60ch; }
+  .looks { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
+  .look { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .look.picked { outline: 3px solid var(--pick); outline-offset: -3px; }
+  .head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .head h2 { font-size: 18px; margin: 0; flex: 1; }
+  .head label { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; min-height: 40px; }
+  .head input { width: 20px; height: 20px; margin: 0; }
+  .stills { display: grid; gap: 2px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); background: var(--line); }
+  .stills figure { margin: 0; background: var(--card); }
+  .stills img { display: block; width: 100%; height: auto; cursor: zoom-in; }
+  .stills figcaption { font-size: 12px; color: var(--muted); padding: 4px 8px 6px; }
+  .meta { padding: 10px 14px 14px; font-size: 14px; }
+  .meta p { margin: 0 0 8px; color: var(--muted); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+  .sw { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .sw i { width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--line); display: inline-block; }
+  .fonts { font-size: 12px; color: var(--muted); word-break: break-word; }
+  .bar { position: sticky; bottom: 0; margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .bar output { flex: 1; min-width: 200px; font-weight: 600; }
+  .bar button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-height: 40px; }
+  dialog { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.8); }
+  dialog img { display: block; max-width: 96vw; max-height: 92vh; }
+</style>
+</head>
+<body>
+<h1>Pick a look for <span id="film">__FILM__</span></h1>
+<p class="lede">The same frames of the film in each look. Tap a still to see it large. Tick the looks you like (one, or a few to mix), then tell Claude your picks in the chat; the line at the bottom says them for you.</p>
+<div class="looks" id="looks"></div>
+<div class="bar"><output id="picks">No looks picked yet.</output><button id="copy" type="button">Copy</button></div>
+<dialog id="zoom"><img alt=""></dialog>
+<script>
+  const LOOKS = "__CANDIDATES__";
+  const picked = new Set();
+  const root = document.getElementById('looks');
+  const say = () => {
+    const out = document.getElementById('picks');
+    out.textContent = picked.size ? `My picks: ${[...picked].join(', ')}` : 'No looks picked yet.';
+  };
+  for (const look of LOOKS) {
+    const card = document.createElement('section');
+    card.className = 'look';
+    const head = document.createElement('div');
+    head.className = 'head';
+    const h = document.createElement('h2');
+    h.textContent = look.name;
+    const label = document.createElement('label');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.addEventListener('change', () => { box.checked ? picked.add(look.name) : picked.delete(look.name); card.classList.toggle('picked', box.checked); say(); });
+    label.append(box, 'Pick');
+    head.append(h, label);
+    const stills = document.createElement('div');
+    stills.className = 'stills';
+    for (const s of look.stills) {
+      const fig = document.createElement('figure');
+      const img = document.createElement('img');
+      img.src = s.src; img.alt = `${look.name}, ${s.id}: ${s.title}`; img.loading = 'lazy';
+      img.addEventListener('click', () => { const z = document.getElementById('zoom'); z.querySelector('img').src = s.src; z.showModal(); });
+      const cap = document.createElement('figcaption');
+      cap.textContent = `${s.id} · ${s.title}`;
+      fig.append(img, cap);
+      stills.append(fig);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const note = document.createElement('p');
+    note.textContent = look.note || '';
+    const sw = document.createElement('div');
+    sw.className = 'swatches';
+    for (const [role, value] of Object.entries(look.color)) {
+      const s = document.createElement('span');
+      s.className = 'sw';
+      const i = document.createElement('i');
+      i.style.background = value;
+      s.append(i, role);
+      sw.append(s);
+    }
+    const fonts = document.createElement('div');
+    fonts.className = 'fonts';
+    fonts.textContent = Object.entries(look.font).filter(([k]) => !k.startsWith('$')).map(([k, v]) => `${k}: ${v.split(',')[0].replace(/"/g, '')}`).join(' · ') + ` · from ${look.from}`;
+    meta.append(note, sw, fonts);
+    card.append(head, stills, meta);
+    root.append(card);
+  }
+  document.getElementById('zoom').addEventListener('click', (e) => e.currentTarget.close());
+  document.getElementById('copy').addEventListener('click', async () => {
+    const text = document.getElementById('picks').textContent;
+    try { await navigator.clipboard.writeText(text); } catch (e) { /* a file:// page may not have the clipboard; the line is on screen */ }
+  });
+</script>
+</body>
+</html>

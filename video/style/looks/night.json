@@ -1,0 +1,5 @@
+{
+  "$note": "Night: light ink on a dark ground, one amber accent; Baskerville titles, Gill Sans labels. An example candidate for the style picker (node pipeline/style-frames.mjs --tokens style/looks/night.json).",
+  "color": {"paper": "#1d1e20", "ink": "#ece6d8", "muted": "#9a958b", "faint": "#46474a", "accent": "#e3a33b", "accentWash": "#4a3b22"},
+  "font": {"serif": "Baskerville, \"Libre Baskerville\", Georgia, serif", "sans": "\"Gill Sans\", \"Gill Sans MT\", \"Helvetica Neue\", sans-serif", "mono": "Menlo, monospace"}
+}

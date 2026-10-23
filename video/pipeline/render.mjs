@@ -30,7 +30,8 @@ const treeKey = (root, paths, skip = () => false) => sha(...paths.flatMap((p) =>
 // one film's key leaves out the other films' scene folders.
 function sourceKey(here, film) {
   const others = filmNames(here).filter((n) => n !== film);
-  const skip = (rel) => others.some((n) => rel.startsWith(`src/scenes/${n}/`));
+  // The style picker's page and template, and candidate looks not chosen, draw no film's frames.
+  const skip = (rel) => others.some((n) => rel.startsWith(`src/scenes/${n}/`)) || rel.startsWith('style/looks/') || /^style\/[^/]+\.html$/.test(rel);
   return treeKey(here, ['src', 'style', 'remotion.config.ts', 'package-lock.json'], skip);
 }
 

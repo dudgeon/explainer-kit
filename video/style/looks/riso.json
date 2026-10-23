@@ -1,0 +1,6 @@
+{
+  "$note": "Riso: blue ink on cream, as if printed on a risograph, one fluorescent pink accent; Didot titles, Futura labels, a faint grid. An example candidate for the style picker (node pipeline/style-frames.mjs --tokens style/looks/riso.json).",
+  "color": {"paper": "#f6f0e1", "ink": "#1f3a63", "muted": "#7686a0", "faint": "#cfd4dc", "accent": "#ff4f7b", "accentWash": "#ffd8e1"},
+  "font": {"serif": "Didot, \"Bodoni 72\", Georgia, serif", "sans": "Futura, \"Avenir Next\", sans-serif", "mono": "\"Courier New\", Menlo, monospace"},
+  "ground": {"grid": 36}
+}
