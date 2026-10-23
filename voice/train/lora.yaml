@@ -1,0 +1,37 @@
+# The kit's VoxCPM2 LoRA recipe (the only one it ships). Needs a Mac with 32 GB or more: on a 32 GB Mac a run peaked at about
+# 15.5 GiB of GPU memory (17.5 GB for the process), about 7 s a step. A 16 GB Mac uses the quick clone instead.
+# Official defaults (conf/voxcpm_v2/voxcpm_finetune_lora.yaml @2.0.3) except batch/accum/tokens/warmup, num_workers (MPS) and
+# noted items. run_lora.sh fills the paths (base model, manifest, save_path) per run. With a few minutes of data, a run of
+# --iters 150 --save-interval 50 and keeping the step that scores best (often step 100) has worked; eval/ picks it.
+pretrained_path: /set/by/run_lora.sh
+train_manifest: /path/to/train.jsonl
+val_manifest: null
+sample_rate: 16000
+out_sample_rate: 48000
+batch_size: 1
+grad_accum_steps: 4       # eff. batch 4 (small data, memory)
+num_workers: 0
+num_iters: 1000           # official default; for ~220 clips (~700 clips-epochs/16 = ~44 steps/epoch) this is ~23 epochs
+log_interval: 10
+valid_interval: 500
+save_interval: 100
+learning_rate: 0.0001
+weight_decay: 0.01
+warmup_steps: 20
+max_steps: 1000
+max_batch_tokens: 4096
+max_grad_norm: 1.0
+save_path: /path/to/ckpt
+tensorboard: /path/to/tb
+lambdas:
+  loss/diff: 1.0
+  loss/stop: 1.0
+lora:
+  enable_lm: true
+  enable_dit: true
+  enable_proj: false
+  r: 32
+  alpha: 32
+  dropout: 0.0
+device: mps
+amp_dtype: none           # fp32 on MPS. Do not change: the VoxCPM library warns that bf16/fp16 glitch on MPS

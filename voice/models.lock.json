@@ -1,0 +1,51 @@
+{
+  "_note": "Base models the own-voice tools need. tools/fetch_models.py (called by setup.sh) downloads each at `revision` and checks every file's sha256. Weights are never in the repo. Licences: VoxCPM2 Apache-2.0; ECAPA Apache-2.0; Parakeet CC-BY-4.0.",
+  "models": {
+    "VoxCPM2": {
+      "hf_repo": "openbmb/VoxCPM2",
+      "revision": "32279effe8c19989596f05d353d1447f51d9e915",
+      "license": "Apache-2.0",
+      "role": "the narrator's base model (speak, train)",
+      "files": {
+        "model.safetensors": "f7f964cfa9da23653baec6e6f7750719977ad944ed9f95fe52fe3a620506891d",
+        "audiovae.pth": "94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1",
+        "config.json": "405f0dcd92f7feba6011ed4eac5c8d4f74cba9712f07fd5cfa3063bbdd95402c",
+        "tokenizer.json": "f8984687e4a92a3503d521396d454b7d68e9fdaab2a0288eb3536c7c1aa4bc20",
+        "tokenizer_config.json": "e78a3ebb48a0b9437efd1823b6b726c823da89e49dd8bcc90c02419d9baa772b",
+        "special_tokens_map.json": "068594063e37662c02b21acf42ebb334ef6a74fb810e68a2368f88f08351de76",
+        "tokenization_voxcpm2.py": "84489ea32b6ee0cae22ed5480cacb6df85c46624c3119be9a2021c3649a12729"
+      },
+      "code": {
+        "pip": "voxcpm==2.0.3",
+        "repo": "https://github.com/OpenBMB/VoxCPM",
+        "tag": "2.0.3",
+        "commit": "19b6bf7590025418821a86dcb817504e0ad7e5df"
+      },
+      "denoiser": "not used (ZipEnhancer skipped)"
+    },
+    "spkrec-ecapa-voxceleb": {
+      "hf_repo": "speechbrain/spkrec-ecapa-voxceleb",
+      "revision": "0f99f2d0ebe89ac095bcc5903c4dd8f72b367286",
+      "license": "Apache-2.0",
+      "role": "speaker similarity (eval/score.py)",
+      "files": {
+        "embedding_model.ckpt": "0575cb64845e6b9a10db9bcb74d5ac32b326b8dc90352671d345e2ee3d0126a2",
+        "hyperparams.yaml": "6f78854fa04ba59e761437b76a2575d3aba5e5016de3e9b69f0c9a5077fb1a41",
+        "mean_var_norm_emb.ckpt": "cd70225b05b37be64fc5a95e24395d804231d43f74b2e1e5a513db7b69b34c33"
+      }
+    },
+    "parakeet-tdt-0.6b-v3": {
+      "hf_repo": "mlx-community/parakeet-tdt-0.6b-v3",
+      "revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+      "license": "CC-BY-4.0",
+      "role": "speech recognition (tools/check_take.py, eval/score.py)",
+      "files": {
+        "config.json": "f320f1292511f34ec47f513755fe20fd01dbfc09a925d42730e66059a6e1ef4c",
+        "model.safetensors": "05e01c7f396c298cf7d23f61da7b504adeab698f0aaeafd9c82d198625464592",
+        "tokenizer.model": "eacec2b0a77f336d4a2ca4a25a7047575d3c2b74de47e997f4c205126ed3135e",
+        "tokenizer.vocab": "41130ff456706304a1adec782ccc9e003c4d417e8e324353d281be958cac4e17",
+        "vocab.txt": "3cde1409fd78783a79b29ed4d32da57c746993856f7c8263bcb905d2e5839db7"
+      }
+    }
+  }
+}

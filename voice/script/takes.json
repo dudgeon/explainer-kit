@@ -1,0 +1,243 @@
+{
+ "T00": {
+  "split": "ref",
+  "lines": [
+   "Hello, and thanks for joining me.",
+   "Over the next few minutes, I'll walk you through one idea, step by step, with a picture for each part.",
+   "Let's begin."
+  ]
+ },
+ "T01": {
+  "split": "train",
+  "lines": [
+   "The birch canoe slid on the smooth planks.",
+   "Glue the sheet to the dark blue background.",
+   "It's easy to tell the depth of a well.",
+   "These days a chicken leg is a rare dish.",
+   "Rice is often served in round bowls.",
+   "The juice of lemons makes fine punch.",
+   "The box was thrown beside the parked truck.",
+   "Four hours of steady work faced us.",
+   "A large size in stockings is hard to sell.",
+   "The boy was there when the sun rose.",
+   "A rod is used to catch pink salmon.",
+   "The source of the huge river is the clear spring.",
+   "Kick the ball straight and follow through.",
+   "Help the woman get back to her feet.",
+   "A pot of tea helps to pass the evening.",
+   "Smoky fires lack flame and heat.",
+   "The soft cushion broke the man's fall.",
+   "The salt breeze came across from the sea.",
+   "The girl at the booth sold fifty bonds.",
+   "The small pup gnawed a hole in the sock."
+  ]
+ },
+ "T02": {
+  "split": "train",
+  "lines": [
+   "The fish twisted and turned on the bent hook.",
+   "Press the pants and sew a button on the vest.",
+   "The swan dive was far short of perfect.",
+   "The beauty of the view stunned the young boy.",
+   "Two blue fish swam in the tank.",
+   "Her purse was full of useless trash.",
+   "The colt reared and threw the tall rider.",
+   "It snowed, rained, and hailed the same morning.",
+   "Read verse out loud for pleasure.",
+   "Hoist the load to your left shoulder.",
+   "Take the winding path to reach the lake.",
+   "Note closely the size of the gas tank.",
+   "Wipe the grease off his dirty face.",
+   "Mend the coat before you go out.",
+   "The wrist was badly strained and hung limp.",
+   "The stray cat gave birth to kittens.",
+   "The young girl gave no clear response.",
+   "The meal was cooked before the bell rang.",
+   "What joy there is in living.",
+   "A king ruled the state in the early days."
+  ]
+ },
+ "T03": {
+  "split": "train",
+  "lines": [
+   "The ship was torn apart on the sharp reef.",
+   "Sickness kept him home the third week.",
+   "The wide road shimmered in the hot sun.",
+   "The lazy cow lay in the cool grass.",
+   "Lift the square stone over the fence.",
+   "The rope will bind the seven books at once.",
+   "Hop over the fence and plunge in.",
+   "Mesh wire keeps chicks inside.",
+   "The frosty air passed through the coat.",
+   "The crooked maze failed to fool the mouse.",
+   "The pipe began to rust while new.",
+   "Open the crate but don't break the glass.",
+   "Add the sum to the product of these three.",
+   "The ripe taste of cheese improves with age.",
+   "Act on these orders with great speed.",
+   "The hog crawled under the high fence.",
+   "Move the vat over the hot fire.",
+   "The bark of the pine tree was shiny and dark.",
+   "Leaves turn brown and yellow in the fall.",
+   "Split the log with a quick, sharp blow."
+  ]
+ },
+ "T04": {
+  "split": "train",
+  "lines": [
+   "Every bridge has one job: to carry a load from one bank to the other without falling down.",
+   "A plank across a stream is the simplest kind, and it bends a little as you walk across it.",
+   "The top of the plank is squeezed, and the bottom is stretched.",
+   "An arch turns that problem around, so every stone is pushed against its neighbors.",
+   "Stone is strong when it's squeezed, which is why Roman arches are still standing.",
+   "A suspension bridge hangs its road from cables, and the cables pull on towers at each end.",
+   "So the real question is never just how strong a bridge is, but where its forces go.",
+   "Once you can see that, every bridge you drive across starts to look a little different."
+  ]
+ },
+ "T05": {
+  "split": "train",
+  "lines": [
+   "Bread starts as four plain things: flour, water, salt and yeast.",
+   "Yeast is alive, and when it's warm and fed, it breathes out tiny bubbles of gas.",
+   "Kneading the dough builds a stretchy web called gluten, which traps those bubbles.",
+   "Leave it in a warm spot for an hour, and the dough slowly doubles in size.",
+   "In the oven, the bubbles swell one last time before the crust sets around them.",
+   "That's why a good loaf is full of holes, and why a cold kitchen makes a heavy one.",
+   "Too much salt slows the yeast down, and too little lets it run wild.",
+   "Bakers have been balancing those few things for thousands of years.",
+   "Next time you slice a loaf, look closely at the holes; each one is a tiny breath."
+  ]
+ },
+ "T06": {
+  "split": "train",
+  "lines": [
+   "A map is a flat picture of a round world, and that's harder than it sounds.",
+   "Try flattening an orange peel, and you'll see the problem right away.",
+   "Something always has to stretch, tear, or squash.",
+   "The map most of us grew up with keeps directions true, but it makes the far north look enormous.",
+   "On that map, Greenland looks about as big as Africa.",
+   "In fact, Africa is roughly fourteen times larger.",
+   "Other maps keep areas true instead, and their shapes look oddly stretched.",
+   "There's no perfect choice, only a choice that suits the question you're asking."
+  ]
+ },
+ "T07": {
+  "split": "train",
+  "lines": [
+   "So that's the whole idea, from the first step to the last.",
+   "If one part went by too quickly, go back and watch it again; it's only a few minutes.",
+   "The best way to remember it is to explain it to someone else.",
+   "Thanks for watching, and I'll see you in the next one.",
+   "Until then, keep asking how things work."
+  ]
+ },
+ "T08": {
+  "split": "train",
+  "lines": [
+   "Maria and Daniel met Priya at the station in Lisbon.",
+   "Kenji flew from Osaka to Chicago, then drove on to Milwaukee.",
+   "Olivia's grandmother grew up in a village outside Nairobi.",
+   "The letter was signed by Professor Hannah Okafor and her colleague, Luis Romero.",
+   "We spent a week in Melbourne, two days in Wellington, and one night in Auckland.",
+   "Ask Sofia, or ask Mateo; one of them will know.",
+   "The river runs from the Swiss Alps, past Basel, all the way to Rotterdam.",
+   "Charlotte, Ahmed, Elena and Tom sat at the corner table.",
+   "The museum in Edinburgh has a whole room about the Vikings.",
+   "My neighbor Rosa keeps bees on her roof in Brooklyn.",
+   "Isaac Newton, Marie Curie and Ada Lovelace changed how we see the world.",
+   "Turn left at Elm Street, then right onto Harbor Road."
+  ]
+ },
+ "T09": {
+  "split": "train",
+  "lines": [
+   "The train leaves at seven forty-five and arrives just after nine.",
+   "A liter of water weighs one kilogram.",
+   "The tower is three hundred and thirty meters tall.",
+   "She was born on the fourth of July, nineteen eighty-two.",
+   "Prices went up by about twelve percent last year.",
+   "Call me back on Tuesday, between two and four in the afternoon.",
+   "The recipe needs two and a half cups of flour and one egg.",
+   "The light from the sun takes about eight minutes to reach us.",
+   "Chapter eleven begins on page two hundred and six.",
+   "The team sent the data to the BBC, the UN and the EU.",
+   "Our flight number is BA two seven one, from gate fourteen.",
+   "It was minus five outside, and the wind made it feel like minus twelve.",
+   "The first, the second, the twenty-third and the hundredth.",
+   "A quarter, a half, three quarters, and the whole thing.",
+   "The year two thousand was a leap year, but nineteen hundred was not."
+  ]
+ },
+ "T10": {
+  "split": "train",
+  "lines": [
+   "Okay, so you know how I said I'd finally fix the bike?",
+   "Well, I did.",
+   "Sort of.",
+   "The chain kept slipping, so I watched a few videos and bought a new one.",
+   "It took me most of Saturday afternoon.",
+   "Turns out the chain was fine; the problem was a loose bolt on the back wheel.",
+   "One bolt!",
+   "I tightened it in about thirty seconds.",
+   "So now I have a spare chain, a clean bike, and a slightly bruised ego.",
+   "Honestly, though, I learned more from getting it wrong than I would have if it had just worked."
+  ]
+ },
+ "T11": {
+  "split": "train",
+  "lines": [
+   "Have you been there before?",
+   "Wait, which way did you say we turn?",
+   "Would you rather walk, or should we take the bus?",
+   "Why does it always rain on the weekend?",
+   "Really? That's all it takes? That was easy.",
+   "Oh, nice. I didn't know you could do that.",
+   "Hmm. Let me think about that for a second.",
+   "You'll need three things: a pencil, a ruler, and about ten minutes.",
+   "First, fold the paper in half. Then, open it up. Finally, fold each corner to the middle.",
+   "It isn't magic. It's just practice.",
+   "Red, orange, yellow, green, blue, indigo, violet.",
+   "Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.",
+   "One, two, three, four, five, six, seven, eight, nine, ten.",
+   "Eleven, twenty, thirty-three, a hundred, a thousand, a million.",
+   "It's a quarter past ten on a Thursday morning in early spring."
+  ]
+ },
+ "T12": {
+  "split": "train",
+  "lines": [
+   "People often ask why the sky is blue.",
+   "The short answer is that sunlight is a mix of every color, and the air scatters some colors more than others.",
+   "Blue light has a short wavelength, so it bounces around the sky much more than red light does.",
+   "Wherever you look, some of that scattered blue is heading toward your eyes.",
+   "So why are sunsets orange?",
+   "When the sun is low, its light crosses far more air to reach you.",
+   "By then, most of the blue has been scattered away, and the reds and oranges are what's left.",
+   "It's the same sunlight, just taking a longer road."
+  ]
+ },
+ "H1": {
+  "split": "heldout",
+  "lines": [
+   "All summer long, a leaf is green because it's full of chlorophyll.",
+   "Chlorophyll catches sunlight and turns it into food for the tree.",
+   "When the days get shorter, the tree stops making it.",
+   "As the green fades, the yellows and oranges that were there all along start to show.",
+   "Some trees also make new red colors in the autumn, which is why maples look like they're on fire.",
+   "A few weeks later, the leaves fall, and the tree rests until spring."
+  ]
+ },
+ "H2": {
+  "split": "heldout",
+  "lines": [
+   "Look inside an ordinary door lock, and you'll find a row of tiny pins.",
+   "Each pin is split into two pieces, and they come in different lengths.",
+   "Springs push the pins down, so they block the cylinder from turning.",
+   "When the right key slides in, its ridges lift every pin to exactly the right height.",
+   "The splits line up along the edge of the cylinder, and it's free to turn.",
+   "The wrong key lifts some pins too far and others not far enough.",
+   "That's the whole trick: a handful of pins, and one key that fits them all."
+  ]
+ }
+}

@@ -1,0 +1,15 @@
+#!/bin/bash
+# Speak text in one of your voices: bin/speak --voice NAME --text "Hello." --out out/   (see kit_voice/speak.py or `bin/speak --help`)
+# Runs under the voice folder's .venv, which ./setup.sh makes. Works from any directory and through a symlink.
+# Heavy (MPS GPU): run it through the kit's scripts/run-heavy.sh, which takes the shared lock.
+set -eu
+src="${BASH_SOURCE[0]}"
+while [ -L "$src" ]; do d="$(cd -P "$(dirname "$src")" && pwd)"; src="$(readlink "$src")"; [[ "$src" != /* ]] && src="$d/$src"; done
+root="$(cd -P "$(dirname "$src")/.." && pwd)"
+py="$root/.venv/bin/python"
+if [ ! -x "$py" ]; then
+  # --help needs only the standard library, so it works before setup.
+  for a in "$@"; do case "$a" in -h|--help) exec python3 -I "$root/kit_voice/speak.py" --help;; esac; done
+  echo "speak: $root/.venv isn't there. Run $root/setup.sh first." >&2; exit 2
+fi
+exec env PYTORCH_ENABLE_MPS_FALLBACK=1 "$py" -I "$root/kit_voice/speak.py" "$@"
