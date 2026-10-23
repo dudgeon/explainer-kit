@@ -1,7 +1,5 @@
 # example script
-<!-- The example film: the smallest film the pipeline builds end to end, two house paper cards and the house voice.
-     Copy this folder to start a film; a real film's script.md is written from its project's script by
-     pipeline/sync-table.mjs. -->
+<!-- Written by pipeline/sync-table.mjs from example-project/script.md on 2026-10-23; edit that, not this file. -->
 
 ## The voice
 

@@ -27,8 +27,21 @@ function resolveBy(ref, shot, here) {
   return false;
 }
 
+// The scene kinds src/scenes/registry.ts registers: the keys of its SCENE_KINDS object, read from the source (the
+// check stage runs in Node, before anything is bundled).
+export function registeredKinds(here) {
+  const file = join(here, 'src/scenes/registry.ts');
+  if (!existsSync(file)) return null;
+  const src = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const body = src.match(/SCENE_KINDS[^=]*=\s*\{([\s\S]*?)\n\};/)?.[1];
+  if (body === undefined) return null;
+  return new Set([...body.matchAll(/(?:^|[,{\s])(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][\w$]*))\s*:/g)].map((m) => m[1] ?? m[2] ?? m[3]));
+}
+
 export function checkScript({here, scenes, shots, lexicon, said, cache}) {
   const errors = [], missing = [];
+  const kinds = registeredKinds(here);
+  if (!kinds) errors.push('shots: src/scenes/registry.ts has no SCENE_KINDS object this check can read');
   const ids = Object.keys(shots).filter((k) => !k.startsWith('$'));
   for (const id of ids) if (!scenes.some((s) => s.id === id)) errors.push(`shots: ${id} is in shots.json but not in the script`);
   const notes = join(cache, 'shot-notes');
@@ -55,6 +68,8 @@ export function checkScript({here, scenes, shots, lexicon, said, cache}) {
     }
     if (!['drawn', 'card'].includes(shot.kind)) errors.push(`shots: ${sc.id} has kind "${shot.kind}"; a shot is "drawn" (with a scene) or "card"`);
     if (shot.kind === 'drawn' && !shot.scene) errors.push(`shots: ${sc.id} is drawn but names no scene`);
+    else if (shot.kind === 'drawn' && kinds && !kinds.has(shot.scene))
+      errors.push(`shots: ${sc.id} is drawn by scene kind "${shot.scene}", which src/scenes/registry.ts doesn't register (registered: ${[...kinds].join(', ') || 'none'}); add it to SCENE_KINDS`);
     // The way in.
     if (prev) {
       const tr = TRANSITIONS[shot.transitionIn];

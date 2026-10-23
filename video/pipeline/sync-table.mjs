@@ -46,7 +46,7 @@ if (!scenes.length) { console.error('no "### S1 · …" scenes with Narration | 
 
 const out = join(here, 'films', film, 'script.md');
 const keepVoice = !voice.length && existsSync(out) ? (readFileSync(out, 'utf8').match(/## The voice\n\n([\s\S]*?)\n\n## /)?.[1] ?? '') : '';
-const voiceTable = voice.length ? ['| Written | Said |', '| --- | --- |', ...voice].join('\n') : keepVoice;
+const voiceTable = voice.length ? ['| Written | Said |', '| --- | --- |', ...voice].join('\n') : keepVoice || '| Written | Said |\n| --- | --- |';
 const body = scenes.map((s) => {
   const bullets = s.rows.flatMap((r) => split(r.say)).map((t) => `- ${t}`).join('\n');
   const shot = s.rows.map((r, i) => `Line ${i + 1}: ${r.see}`).join(' ');
