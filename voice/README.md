@@ -13,7 +13,7 @@ This folder turns a short recording of your voice into a narrator the kit can us
 
 **How accurate is the quick clone?** It is a likeness made from one short reading, not a model of your voice. People who know you will recognise it, but it is not exact: it can drift in tone or pace from line to line, and it may say unusual names differently from you. In our tests it scored 0.747 speaker similarity to the real voice on the harder test lines, against 0.800 for a fine-tune (higher is closer). A fine-tune learns from all 15 takes, so it holds your tone, pace and the way you say names and numbers more steadily. Listen to a few lines of either before you narrate a whole film with it.
 
-Fine-tuning needs a Mac with 32 GB of memory or more: training peaks at about 15 GiB of GPU memory, and speaking with the trained voice at about 13 GiB. On a smaller Mac the kit offers the quick clone instead and says so before you record the long script.
+Fine-tuning needs a Mac with 32 GB of memory or more: training peaks at about 15 GiB of GPU memory, and speaking with the trained voice at about 13 GiB. On a smaller Mac the kit offers the quick clone instead and says so before you record the long script. Even on a 32 GB Mac, expect to quit your browser and other large apps before training: the kit checks free memory first and waits until about 20 GiB is free (in a test with a browser and a few apps open, it found 16 to 19 GiB).
 
 ## What's here
 
