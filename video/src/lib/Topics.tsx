@@ -5,7 +5,7 @@ import {smootherstep} from './camera';
 import {useStyle} from '../scenes/house/kit';
 
 // The running topic list: at each change of topic (the script's `Topic:` lines) the picture steps right to 80% of
-// the frame and a vertical list of every topic stands in the left 20%, on paper; the accent bar (style.paper.marker)
+// the frame and a vertical list of every topic stands in the left 20%, on paper; the accent bar (style.color.accent)
 // slides from the topic just finished to the new one, then the picture comes back. A motion graphic over the scenes'
 // own transitions, which keep playing in the smaller picture. Sizes follow the film's frame (style.frame).
 
@@ -31,18 +31,18 @@ export function topicsAt(changes: TopicChange[], t: number): {u: number; bar: nu
 }
 
 /** The picture's place while the list shows: 80% wide, flush right, centred vertically. */
-export function pictureTransform(u: number, frame: {width: number; height: number}): React.CSSProperties {
+export function pictureTransform(u: number, frame: {width: number; height: number}, ink: string): React.CSSProperties {
   if (u <= 0) return {};
   const s = 1 - 0.2 * u;
   return {transform: `translate(${railWidth(frame.width) * u}px, ${(frame.height * (1 - s)) / 2}px) scale(${s})`, transformOrigin: '0 0',
-    borderRadius: 18 * u / s, overflow: 'hidden', boxShadow: `0 ${24 * u}px ${70 * u}px rgba(31,35,40,${0.3 * u})`};
+    borderRadius: 18 * u / s, overflow: 'hidden', boxShadow: `0 ${24 * u}px ${70 * u}px color-mix(in srgb, ${ink} ${Math.round(30 * u)}%, transparent)`};
 }
 
 const ROW = 92, CUR_ROW = 120;
 export const TopicRail = ({topics, u, bar, current}: {topics: string[]; u: number; bar: number; current: number}) => {
   const style = useStyle();
   if (u <= 0) return null;
-  const P = style.paper, ui = style.font.ui, mono = style.font.mono, H = style.frame.height, RAIL = railWidth(style.frame.width), ACCENT = P.marker;
+  const C = style.color, ui = style.font.sans, mono = style.font.mono, H = style.frame.height, RAIL = railWidth(style.frame.width), ACCENT = C.accent;
   const heights = topics.map((_, i) => (i === current ? CUR_ROW : ROW));
   const total = heights.reduce((a, b) => a + b, 0);
   const tops: number[] = [];
@@ -57,11 +57,11 @@ export const TopicRail = ({topics, u, bar, current}: {topics: string[]; u: numbe
           const cur = i === current, past = i < current;
           return (
             <div key={t + i} style={{position: 'absolute', left: 56, right: 18, top: tops[i], height: heights[i], display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-              <div style={{fontFamily: mono, fontSize: 19, letterSpacing: 1, color: cur ? ACCENT : past ? P.ink2 : P.ink3}}>
+              <div style={{fontFamily: mono, fontSize: 19, letterSpacing: 1, color: cur ? ACCENT : past ? C.muted : C.faint}}>
                 {String(i + 1).padStart(2, '0')}{past ? '  ✓' : ''}
               </div>
               <div style={{fontFamily: ui, fontSize: cur ? 40 : 29, fontWeight: cur ? 650 : 500, letterSpacing: cur ? -1 : -0.3, lineHeight: 1.08,
-                color: cur ? P.ink : past ? P.ink2 : P.ink3}}>{t}</div>
+                color: cur ? C.ink : past ? C.muted : C.faint}}>{t}</div>
             </div>
           );
         })}

@@ -39,3 +39,8 @@ voice/voices/*
 # The kit's own compute lock (default location)
 .gpu.lock
 .gpu.lock.*
+
+# The style picker's output (pipeline/style-frames.mjs writes it from style/picker.template.html)
+video/style/picker.html
+# Scratch at the repo root for a reviewer's look (never committed)
+scratch-review/

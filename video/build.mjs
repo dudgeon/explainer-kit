@@ -8,6 +8,9 @@
 //   --stills                              no video: one still per scene, where it settles. This VOICES EVERY LINE first
 //                                         (the timeline needs each line's length and word timings), so on a fresh film it
 //                                         is a GPU run; only once the voice is cached is it quick.
+//   --stills --estimate                   stills with no voicing: lines timed at the look's target pace, no audio, no
+//                                         score (pipeline/estimate.mjs). Quick, no voice models; for a look or a layout,
+//                                         not for timing (style-frames.mjs uses the same estimate).
 //   --draft                               half-size render, for a quick look
 //   --scene S7                            render one scene (or S7,S8) to out/<name>/scene-S7.mp4, from the cache where unchanged
 //   --whole                               render the film in one pass (no scene cache)
@@ -22,13 +25,14 @@ import {copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from '
 import {dirname, join, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {checkScript, scriptChanges} from './pipeline/check.mjs';
-import {plan} from './pipeline/plan.mjs';
+import {plan, posterFrame as posterAt, stillAt} from './pipeline/plan.mjs';
 import {parseScript, said} from './pipeline/script.mjs';
 import {BuildError} from './pipeline/util.mjs';
 import {filmNames, filmPaths, filmStyle} from './pipeline/film.mjs';
 import {voiceLines, voiceSetup} from './pipeline/voice.mjs';
 import {COMPOSITION, gcCache, renderFilm, reviewClips, sceneKeys, soundtrackKey} from './pipeline/render.mjs';
 import {scoreBed} from './pipeline/score.mjs';
+import {estimateVoiced} from './pipeline/estimate.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2), args = new Set(argv);
@@ -40,6 +44,8 @@ const value = (flag) => {
 };
 const film = value('--film');
 const voiceArg = value('--voice');
+const estimate = args.has('--estimate');
+if (estimate && !args.has('--stills')) { console.error('BUILD FAILED: --estimate is for --stills only (a film is never rendered on estimated timings)'); process.exit(1); }
 let paths;
 try { paths = filmPaths(here, film); } catch (e) { console.error(`BUILD FAILED: ${e.message}`); process.exit(1); }
 const cache = join(here, '.cache'), pub = paths.pub, out = paths.out;
@@ -70,26 +76,32 @@ try {
     // With every line voiced already, the plan itself is checked too: events on heard words, transitions, timings.
     const keyed = voice.keyed(lines);
     const unvoiced = keyed.filter((l) => !existsSync(join(cache, 'voice', `${l.key}.asr.json`)));
-    if (unvoiced.length) { log(`check: plan not checked (${unvoiced.length} line(s) not voiced yet); a build voices them`); process.exit(0); }
+    if (unvoiced.length) {
+      // Not voiced yet: the plan is checked on estimated timings instead (every event still lands on its word).
+      const tl = plan({scenes, shots, voiced: estimateVoiced(lines, style), style});
+      log(`check: plan ok on estimated timings, about ${fmt(tl.duration)} (${unvoiced.length} line(s) not voiced yet; a build voices them)`);
+      process.exit(0);
+    }
     const voiced = keyed.map((l) => { const a = JSON.parse(readFileSync(join(cache, 'voice', `${l.key}.asr.json`), 'utf8')); return {...l, duration: a.duration_s, words: a.words}; });
     const tl = plan({scenes, shots, voiced, style});
     log(`check: plan ok, ${fmt(tl.duration)}`);
     process.exit(0);
   }
 
-  // 2. Voice (every build but --check voices every line not already cached, --stills included).
-  const voiced = voiceLines(lines, {here, paths, setup: voice, cache, pub, style, force: args.has('--force-voice'), log});
+  // 2. Voice (every build but --check voices every line not already cached, --stills included; --stills --estimate
+  // times the lines by estimate instead and voices nothing).
+  const voiced = estimate ? estimateVoiced(lines, style) : voiceLines(lines, {here, paths, setup: voice, cache, pub, style, force: args.has('--force-voice'), log});
+  if (estimate) log(`voice: none (--estimate: ${lines.length} lines timed at ${style.voice.targetWps} words/s, no audio)`);
 
   // 3. Timeline
   const timeline = plan({scenes, shots, voiced, style});
   // 4. Score: the bed for the film's length, mixed in the film under the voice (pipeline/score.mjs).
-  if (!args.has('--no-score')) timeline.score = scoreBed({here, cache, pub, duration: timeline.duration, voiceWavs: voiced.slice(0, 8).map((l) => join(pub, l.src)), log});
+  if (!args.has('--no-score') && !estimate) timeline.score = scoreBed({here, cache, pub, duration: timeline.duration, voiceWavs: voiced.slice(0, 8).map((l) => join(pub, l.src)), log});
   for (const sc of timeline.scenes) if (sc.transitionIn) log(`transition: into ${sc.id} by ${sc.transitionIn.name}`);
   // The poster: the first scene's settled frame (its title card), when its shot names one (`thumbnail`). Film draws
   // the film's frame 0 as that frame, so a player with no poster image shows the title card until play, and
   // out/<name>/thumbnail.png is the same frame.
-  const first = timeline.scenes[0], thumbAt = shots[first.id]?.thumbnail;
-  const posterFrame = thumbAt === undefined ? undefined : Math.round((first.start + (thumbAt < 0 ? (first.exit?.at ?? first.duration) + thumbAt : thumbAt)) * timeline.fps);
+  const first = timeline.scenes[0], posterFrame = posterAt(timeline, shots);
   if (posterFrame !== undefined) first.poster = +(posterFrame / timeline.fps - first.start).toFixed(6);
   // The film's own frame size and look: the scenes read `style` through src/scenes/house/kit.tsx, never tokens.json.
   Object.assign(timeline, {width: style.frame.width, height: style.frame.height, style});
@@ -100,7 +112,6 @@ try {
   if (spawnSync('node', [join(here, 'lint.mjs')], {stdio: 'inherit'}).status !== 0) throw new BuildError('lint');
 
   // 6. Stills: each scene where it settles (just before its exit, else 70% of the way in).
-  const stillAt = (s) => s.start + Math.min(s.duration - 0.1, s.exit ? s.exit.at - 0.3 : s.duration * 0.7);
   // A one-scene preview (--scene) makes no stills.
   for (const s of args.has('--scene') ? [] : timeline.scenes) {
     remotion('still', 'src/index.ts', COMPOSITION, join(out, `still-${s.id}.png`), `--frame=${Math.round(stillAt(s) * timeline.fps)}`);
@@ -114,6 +125,11 @@ try {
   if (!args.has('--scene')) spawnSync('/bin/sh', ['-c', `ffmpeg -v error -y ${timeline.scenes.map((s) => `-i "${join(out, `still-${s.id}.png`)}"`).join(' ')} ` +
     `-filter_complex "${timeline.scenes.map((_, i) => `[${i}]scale=640:${cellH},setsar=1[s${i}]`).join(';')};${timeline.scenes.map((_, i) => `[s${i}]`).join('')}concat=n=${n}:v=1:a=0,tile=4x${Math.ceil(n / 4)}:padding=6" -frames:v 1 "${join(out, 'stills.png')}"`]);
 
+  if (estimate) {
+    // Estimated timings are not the film's: they leave no review, no record of the cache, the script or a report behind.
+    log(`stills: ${relative(here, out)}/still-*.png (estimated timings)`);
+    process.exit(0);
+  }
   // 7. Render: a scene at a time, from the cache where a scene is unchanged (pipeline/render.mjs); `--scene S7` renders
   // just that scene to out/<name>/scene-S7.mp4, for a quick look. `--whole` renders the film in one pass.
   const scale = args.has('--draft') ? 0.5 : 1;
@@ -150,7 +166,7 @@ try {
     // The score's ear check: a waveform of the final mix, and five timecodes to listen at. The checks above are
     // numbers; whether the bed sits right is decided by ear.
     if (timeline.score) {
-      spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', mp4, '-filter_complex', 'showwavespic=s=2400x360:split_channels=0:colors=#2F6FEB', '-frames:v', '1', join(out, 'score-qa.png')]);
+      spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', mp4, '-filter_complex', `showwavespic=s=2400x360:split_channels=0:colors=${style.color.accent}`, '-frames:v', '1', join(out, 'score-qa.png')]);
       const ls = timeline.scenes.flatMap((s) => s.lines.map((l) => ({id: l.id, start: s.start + l.start, end: s.start + l.start + l.duration})));
       let gap = {at: 0, len: 0};
       for (let i = 1; i < ls.length; i++) if (ls[i].start - ls[i - 1].end > gap.len) gap = {at: ls[i - 1].end, len: ls[i].start - ls[i - 1].end};

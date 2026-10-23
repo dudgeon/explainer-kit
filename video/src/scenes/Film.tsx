@@ -3,7 +3,7 @@ import {PaperGround, TopicRail, pictureTransform, topicChanges, topicsAt} from '
 import {StyleProvider, useStyle, type Style} from './house/kit';
 import {SCENE_KINDS} from './registry';
 
-type Line = {id: string; text: string; src: string; start: number; duration: number};
+type Line = {id: string; text: string; src: string | null; start: number; duration: number};
 type Scene = {
   id: string; title: string; topic?: string | null; kind: 'card' | 'drawn'; start: number; duration: number; lines: Line[];
   poster?: number;
@@ -35,23 +35,23 @@ function scoreGain(t: number, sc: ScoreData, lines: {start: number; end: number}
 
 /** A `kind: "card"` shot: a title card on paper. A stand-in (a scene not drawn yet) says so in its corner. */
 const Card = ({card}: {card: NonNullable<Scene['card']>}) => {
-  const {frame, font, paper: P} = useStyle();
+  const {frame, font, color: C, type} = useStyle();
   const [sub, ...rest] = card.sub ? card.sub.split(' · ') : [];
   return (
     <AbsoluteFill>
       <PaperGround />
-      <div style={{position: 'absolute', left: frame.safe + 32, right: frame.safe + 32, top: frame.height * 0.36, color: P.ink, fontFamily: font.ui}}>
-        <div style={{fontSize: 112, fontWeight: 600, letterSpacing: -3, lineHeight: 1.04}}>{card.title}</div>
-        {sub && <div style={{fontSize: 44, fontWeight: 500, letterSpacing: -0.5, color: P.ink2, marginTop: 18}}>{sub}</div>}
+      <div style={{position: 'absolute', left: frame.safe + 32, right: frame.safe + 32, top: frame.height * 0.36, color: C.ink, fontFamily: font.serif}}>
+        <div style={{fontSize: type.card, lineHeight: 1.08}}>{card.title}</div>
+        {sub && <div style={{fontFamily: font.sans, fontSize: type.label * 1.4, fontWeight: 500, color: C.muted, marginTop: 22}}>{sub}</div>}
         {rest.length > 0 && (
-          <div style={{fontFamily: font.mono, fontSize: 24, color: P.ink2, marginTop: 36, lineHeight: 1.7}}>
+          <div style={{fontFamily: font.mono, fontSize: type.small, color: C.muted, marginTop: 36, lineHeight: 1.7}}>
             {rest.map((l) => <div key={l}>{l}</div>)}
           </div>
         )}
       </div>
       {card.standIn && (
-        <div style={{position: 'absolute', right: frame.safe, bottom: frame.safe, fontFamily: font.mono, fontSize: 22, color: P.ink3,
-          border: `1.5px dashed ${P.ink3}`, padding: '6px 14px'}}>stand-in: not drawn yet</div>
+        <div style={{position: 'absolute', right: frame.safe, bottom: frame.safe, fontFamily: font.mono, fontSize: type.small, color: C.muted,
+          border: `1.5px dashed ${C.faint}`, padding: '6px 14px'}}>stand-in: not drawn yet</div>
       )}
     </AbsoluteFill>
   );
@@ -69,9 +69,12 @@ const SceneView = ({scene, timeline}: {scene: Scene; timeline: FilmTimeline}) =>
       {scene.kind === 'card' && scene.card && <Card card={scene.card} />}
       {Registered && scene.drawn && <Registered t={t} ev={scene.drawn.events} scene={scene} timeline={timeline} />}
       {scene.lines.map((l) => (
-        <Sequence key={l.id} from={Math.round(l.start * fps)} durationInFrames={Math.ceil((l.duration + 0.1) * fps)}>
-          <Audio src={staticFile(l.src)} />
-        </Sequence>
+        // A line timed by estimate (build.mjs --estimate, the style picker) has no audio yet.
+        l.src ? (
+          <Sequence key={l.id} from={Math.round(l.start * fps)} durationInFrames={Math.ceil((l.duration + 0.1) * fps)}>
+            <Audio src={staticFile(l.src)} />
+          </Sequence>
+        ) : null
       ))}
     </AbsoluteFill>
   );
@@ -84,7 +87,7 @@ const FilmBody = ({timeline}: {timeline: FilmTimeline}) => {
   const {topics, changes} = topicChanges(timeline.scenes);
   const tp = topicsAt(changes, frame / fps);
   return (
-    <AbsoluteFill style={{background: style.paper.ground}}>
+    <AbsoluteFill style={{background: style.color.paper}}>
       {timeline.score && (() => {
         const sc = timeline.score;
         const lines = timeline.scenes.flatMap((s) => s.lines.map((l) => ({start: s.start + l.start, end: s.start + l.start + l.duration})));
@@ -92,7 +95,7 @@ const FilmBody = ({timeline}: {timeline: FilmTimeline}) => {
         return <Audio src={staticFile(sc.src)} volume={(f) => scoreGain(f / fps, sc, lines, at, timeline.duration)} />;
       })()}
       {tp.u > 0 && <PaperGround />}
-      <AbsoluteFill style={pictureTransform(tp.u, style.frame)}>
+      <AbsoluteFill style={pictureTransform(tp.u, style.frame, style.color.ink)}>
         {timeline.scenes.map((s, i) => {
           const last = i === timeline.scenes.length - 1;
           // `fade` is 0: scenes hand over by transitions they draw themselves, never a dissolve.

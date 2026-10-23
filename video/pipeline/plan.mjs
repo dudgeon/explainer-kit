@@ -106,3 +106,12 @@ export function plan({scenes, shots, voiced, style}) {
   const duration = +t0.toFixed(3);
   return {fps, duration, frames: Math.ceil(duration * fps), fade: 0, scenes: out};
 }
+
+/** Where a scene settles, for its still: just before its exit, else 70% of the way in (seconds into the film). */
+export const stillAt = (s) => s.start + Math.min(s.duration - 0.1, s.exit ? s.exit.at - 0.3 : s.duration * 0.7);
+
+/** The poster frame: the first scene's settled frame, when its shot names one (`thumbnail`, seconds; negative = from its exit). */
+export function posterFrame(timeline, shots) {
+  const first = timeline.scenes[0], thumbAt = shots[first.id]?.thumbnail;
+  return thumbAt === undefined ? undefined : Math.round((first.start + (thumbAt < 0 ? (first.exit?.at ?? first.duration) + thumbAt : thumbAt)) * timeline.fps);
+}

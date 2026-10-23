@@ -1,34 +1,30 @@
 import {AbsoluteFill} from 'remotion';
-import {PaperGround} from '../../lib/Paper';
 import type {SceneProps} from '../registry';
-import {useStyle} from './kit';
+import {Canvas, Draw, Para, at, useKit, wrap} from './kit';
 
-// The house paper card: the paper ground with the scene's title in ink, so a film builds end to end before its real
-// scenes exist, and the example film (films/example) has something to draw. It shows the pipeline's grammar in the
-// smallest form: the title draws in as the scene opens, an accent rule draws under it on the word the shot's `mark`
-// event names, and the line being spoken sits under the title while it is said. A pure function of the time t.
-
-const clamp01 = (u: number) => Math.max(0, Math.min(1, u));
-const ease = (u: number) => { const x = clamp01(u); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+// The house paper card: the scene's title in the serif on plain paper, and an accent rule that draws under it on the
+// word the shot's `mark` event names. A film builds end to end with it before its real scenes exist, and the example
+// film (films/example) is made of it. It shows the house grammar in its smallest form: the title arrives as the scene
+// opens, the one accent arrives on its word, and the narration is never written on screen. A pure function of t.
 
 export const PaperCard = ({t, ev, scene}: SceneProps) => {
-  const {frame, font, paper: P} = useStyle();
-  const title = ease(t / 0.6);
+  const {safe, S, H, type, line} = useKit();
+  const x = safe + 18, width = S - 2 * x, size = type.card;
+  const rows = wrap(scene.title, size, width).length;
+  // The block (title, then the rule) sits a little above the middle of the frame.
+  const top = H * 0.46 - (rows * size * 1.12) / 2 + size * 0.8;
+  const ruleY = top + (rows - 1) * size * 1.12 + size * 0.7;
+  const title = at(t, 0.05, 0.8);
   // The accent rule: drawn over 0.5 s from the `mark` event; a shot without one has no rule.
-  const rule = ev.mark === undefined ? 0 : ease((t - ev.mark) / 0.5);
-  const line = (scene.lines ?? []).find((l) => t >= l.start && t <= l.start + l.duration + 0.3);
-  const width = frame.width - frame.safe * 4;
+  const rule = ev.mark === undefined ? 0 : at(t, ev.mark, 0.5);
   return (
     <AbsoluteFill>
-      <PaperGround />
-      <AbsoluteFill style={{justifyContent: 'center', padding: frame.safe * 2}}>
-        <div style={{fontFamily: font.ui, fontSize: 96, fontWeight: 600, letterSpacing: -2, lineHeight: 1.05, color: P.ink,
-          opacity: title, transform: `translateY(${(1 - title) * 16}px)`}}>{scene.title}</div>
-        <div style={{height: 8, marginTop: 28, width: width * 0.32 * rule, background: P.marker, borderRadius: 4}} />
-        <div style={{minHeight: 120, marginTop: 36, maxWidth: width, fontFamily: font.ui, fontSize: 40, fontWeight: 500, lineHeight: 1.3, color: P.ink2}}>
-          {line?.text ?? ''}
-        </div>
-      </AbsoluteFill>
+      <Canvas>
+        <g transform={`translate(0 ${(1 - title) * 14})`}>
+          <Para x={x} y={top} text={scene.title} width={width} size={size} o={title} />
+        </g>
+        <Draw d={`M${x + 4} ${ruleY}H${x + 4 + width * 0.3}`} u={rule} color="accent" w={line.bold} />
+      </Canvas>
     </AbsoluteFill>
   );
 };
