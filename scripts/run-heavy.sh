@@ -13,7 +13,7 @@ task=""; kind="--exclusive"
 while [ $# -gt 0 ]; do case "$1" in
   --task) task="${2:?--task needs a task name}"; shift 2 ;;
   --shared) kind="--shared"; shift ;;
-  -h|--help) sed -n 2,10p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n 2,9p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   --) shift; break ;;
   *) break ;; esac; done
 [ $# -gt 0 ] || { echo "usage: scripts/run-heavy.sh [--task <task>] [--shared] <command...>" >&2; exit 64; }

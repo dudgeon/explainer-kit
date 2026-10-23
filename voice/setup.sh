@@ -12,7 +12,7 @@ eval_too=0; from="${KIT_VOICE_MODELS_FROM:-}"
 while [ $# -gt 0 ]; do case $1 in
   --eval) eval_too=1; shift;;
   --from) from="${2:?--from needs a folder}"; shift 2;;
-  -h|--help) sed -n 2,8p "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+  -h|--help) sed -n 2,7p "$0" | sed 's/^# \{0,1\}//'; exit 0;;
   *) echo "setup: unknown option $1 (see ./setup.sh --help)" >&2; exit 2;; esac; done
 
 [ "$(uname -m)" = arm64 ] || echo "setup: warning: this is not Apple silicon; speak uses the MPS GPU and won't work here" >&2

@@ -44,3 +44,9 @@ voice/voices/*
 video/style/picker.html
 # Scratch at the repo root for a reviewer's look (never committed)
 scratch-review/
+
+voice/eval/index.html
+voice/eval/scores*.json
+voice/eval/raw/
+voice/eval/out/
+__pycache__/
