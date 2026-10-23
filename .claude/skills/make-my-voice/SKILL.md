@@ -56,7 +56,12 @@ scripts/run-heavy.sh --shared --task voice-house voice/.venv-eval/bin/python -I 
 It copies the take into `voice/takes/`, cuts it into lines and prints a verdict. Say it in plain words:
 - **PASS**: good to use.
 - **REDO**, with reasons: clipping (too loud: move the phone back a little), noise floor above -50 dBFS or SNR under 30 dB (the room is noisy: find a quieter, softer room), a sample rate under 44.1 kHz (Voice Memos isn't set to Lossless), or a take WER above 0.15 (the reading wandered from the script).
-- **REDO LINES**: only those lines. Either re-record the take, or, if the user said a line a little differently but well, record what they said in `voice/script/overrides.json` (`{"T05_03": {"text": "what they said"}}`, or `{"drop": true}` to leave the line out) and run `voice/.venv-eval/bin/python -I voice/tools/apply_overrides.py`.
+- **REDO LINES**: only those lines. Look at what it printed as heard before you ask for a re-record:
+  - The speech check spelled a well-read line differently (a name such as "Sophia" for "Sofia", "Meshwire" for "Mesh wire", "on to" for "onto"): the line is fine. Keep the script's own words for it in `voice/script/overrides.json` (`{"T08_06": {"text": "<the script line>"}}`).
+  - The user said a line a little differently but well: record what they said (`{"T05_03": {"text": "what they said"}}`).
+  - Otherwise, leave the line out (`{"T05_03": {"drop": true}}`) or re-record the take.
+
+  Then run `voice/.venv-eval/bin/python -I voice/tools/apply_overrides.py`. A dropped or still-flagged line is simply not trained on; a take needs no re-record for one or two of them.
 
 For T00 the checker keeps the cleanest of the three readings as `voice/takes/seg/T00/T00_pick.wav` (and `.txt`, the words it says). After the takes are checked, record them:
 
@@ -92,7 +97,7 @@ Send `video/out/example/example-draft.mp4`. If they already have a film, `script
 
 ## 7. The fine-tune (32 GB or more)
 
-Check memory now (exit 3: ask the user to quit apps first):
+Check memory now (exit 3: ask the user to quit apps first). On a 32 GB Mac in everyday use (a browser and a few apps open) expect a WAIT: in a test it found 15.7 to 18.6 GiB free against the 20 GiB it asks for, so the user will usually need to quit the browser and other large apps first:
 
 ```
 scripts/preflight.sh train-full
@@ -118,7 +123,7 @@ scripts/run-heavy.sh --task voice-voxcpm voice/eval/speak_eval.sh <name>-step149
 scripts/run-heavy.sh --task voice-voxcpm voice/eval/speak_eval.sh <name>-zero --voice <name>-quick --lora none
 ```
 
-(Use the checkpoint folders that are actually in `voice/runs/<name>/ckpt/`.) Then score them and make the listening page:
+(Use the checkpoint folders that are actually in `voice/runs/<name>/ckpt/`.) Then score them and make the listening page (both tools take paths inside `voice/`, so `eval/scores-<name>.json` is `voice/eval/scores-<name>.json`):
 
 ```
 scripts/run-heavy.sh --task voice-house voice/.venv-eval/bin/python -I voice/eval/score.py --systems <name>-step50,<name>-step100,<name>-step149,<name>-zero --out eval/scores-<name>.json
