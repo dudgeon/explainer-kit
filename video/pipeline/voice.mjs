@@ -65,20 +65,24 @@ export function voiceSetup({here, paths, voice: asked}) {
   let run = null, setup;
   if (engine === 'voxcpm2') {
     // The own-voice tool's venv and speak script. A line's key is made of what the voice IS (LoRA weights, the speak
-    // script, the reference clip and its text, seed, tempo, spellings), never of where it is kept: moving the voice
-    // folder re-voices nothing.
+    // script and its pinned packages, the reference clip and its text, seed, tempo), never of where it is kept: moving
+    // the voice folder re-voices nothing. Spellings stay out, as for qwen-clone: each line's key holds its text as said.
     const tool = join(repo, 'voice'), python = join(tool, '.venv/bin/python'), script = join(tool, 'kit_voice/speak.py');
-    for (const [what, f] of [['venv python', python], ['speak script', script]])
+    // The weights, where speak.py looks for them, so a missing model stops the build here, not mid-voicing.
+    const model = join((process.env.KIT_VOICE_MODELS || process.env.KIT_MODELS || join(homedir(), 'Library/Caches/explainer-kit/models')).replace(/^~(?=\/|$)/, homedir()), 'VoxCPM2');
+    for (const [what, f] of [['venv python', python], ['speak script', script], ['VoxCPM2 model', join(model, 'model.safetensors')]])
       if (!existsSync(f)) throw new BuildError(`voice: ${name} is a VoxCPM2 voice, but the own-voice ${what} ${f} isn't there. Run ./setup.sh --voice-train, or use --voice house.`);
     const lora = card.lora ? at(card.lora) : null;
     if (lora && !existsSync(join(lora, 'lora_weights.safetensors'))) throw new BuildError(`voice: the LoRA ${join(lora, 'lora_weights.safetensors')} isn't there`);
-    setup = sha('voxcpm2', lora ? fileSha(join(lora, 'lora_weights.safetensors')) : 'zero-shot', fileSha(script), fileSha(refWav), refText, voice.seed, voice.tempo, voice.said);
+    const reqs = join(tool, 'requirements/voxcpm.txt');
+    setup = sha('voxcpm2', lora ? fileSha(join(lora, 'lora_weights.safetensors')) : 'zero-shot', fileSha(script), existsSync(reqs) ? fileSha(reqs) : '', fileSha(refWav), refText, voice.seed, voice.tempo);
     run = {python, script, tool, lora, folder};
   } else {
-    // The voice file minus its notes and spellings, its reference clip, and the engine's own files.
-    // `said` stays out of the hash: a line's key already holds its text as said, so a new spelling re-voices only the lines it changes.
-    const {$note, said: _said, ...keyable} = card;
-    setup = sha('qwen-clone', keyable, fileSha(refWav), ...['models.lock.json', 'requirements.txt', 'tts.py'].map((f) => readFileSync(join(dir, f), 'utf8')));
+    // What the voice sounds like, and nothing else: the reference clip's bytes and its words (from ref_text or
+    // ref_text_file alike), seed, tempo, and the engine's own files. Notes, provenance and licence fields in voice.json
+    // don't key a line, nor does where the clip is kept. `said` stays out too: a line's key already holds its text as
+    // said, so a new spelling re-voices only the lines it changes.
+    setup = sha('qwen-clone', {ref_text: refText, seed: voice.seed, tempo: voice.tempo}, fileSha(refWav), ...['models.lock.json', 'requirements.txt', 'tts.py'].map((f) => readFileSync(join(dir, f), 'utf8')));
   }
   // A voice's own spellings (`said` in its file, {written: said}), for words only that voice gets wrong; the script's
   // table stays the same for every voice. The speech check still expects the written line.
@@ -111,7 +115,8 @@ export function voiceLines(lines, {here, paths, voice: asked, setup: given, cach
       voice: {...voice, ref_wav: refWav}, out_dir: out}));
     if (vox) {
       const linesJson = join(vc, `job-${jobKey}.lines.json`);
-      writeFileSync(linesJson, JSON.stringify(todo.map((l) => ({id: l.key, text: l.said}))));
+      // Each line carries its seed, so its audio depends on (voice, text, seed) and not on its place in the job.
+      writeFileSync(linesJson, JSON.stringify(todo.map((l) => ({id: l.key, text: l.said, seed}))));
       // Tempo is applied below, as for every engine, so the speak script is told 1; spellings are already in the text.
       const r = spawnSync(vox.python, ['-I', vox.script, '--voice', vox.folder, '--ref-wav', refWav, '--ref-text', voice.ref_text,
         '--lines', linesJson, '--out', out, '--seed', String(seed), '--tempo', '1', '--lora', vox.lora ?? 'none'],
@@ -156,7 +161,8 @@ export function voiceLines(lines, {here, paths, voice: asked, setup: given, cach
       if (!asr.passed) { failures.push({l, asr}); continue; }
       copyFileSync(join(out, `${l.key}.wav`), join(vc, `${l.key}.wav`));
       copyFileSync(join(out, `${l.key}.asr.json`), join(vc, `${l.key}.asr.json`));
-      if (attempt) log(`voice: ${l.id} passed on seed ${seed}`);
+      const ok = JSON.parse(readFileSync(join(vc, `${l.key}.asr.json`), 'utf8'));
+      log(`voice: ${l.id} passed the speech check: WER ${ok.wer}, ${ok.words_per_sec} words/s, ${ok.duration_s} s, seed ${seed}${attempt ? ` (re-roll ${attempt})` : ''}`);
     }
     todo = failures.map((f) => f.l);
   }

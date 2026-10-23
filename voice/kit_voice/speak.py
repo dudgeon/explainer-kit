@@ -6,7 +6,8 @@
 
 Lines: --text "one line", or --lines as a JSON list ('["a","b"]'), a .json file (strings or {"id","text"}), or a text
 file with one line per row. Each line becomes <id>.wav in --out (ids default to L01, L02, ...); timing.json lists them.
-Line i is seeded with --seed + i, so the same lines, seed and voice give the same audio.
+Line i is seeded with --seed + i, so the same lines, seed and voice give the same audio; a {"id","text","seed"} item is
+seeded with its own seed instead, so its audio does not depend on its place in the list (the kit's video build does this).
 
 The voice is a folder (voices/<name>: voice.json, lora_weights.safetensors, lora_config.json, reference.wav,
 reference.txt), made by train/package_voice.py. --voice takes a folder or a name under voices/; $KIT_VOICE sets the default.
@@ -79,7 +80,7 @@ def read_lines(raw, text):
         items = json.load(open(raw))
     else:
         items = [l.strip() for l in open(raw) if l.strip()]
-    return [(it.get("id", f"L{i+1:02d}"), it["text"]) if isinstance(it, dict) else (f"L{i+1:02d}", it) for i, it in enumerate(items)]
+    return [(it.get("id", f"L{i+1:02d}"), it["text"], it.get("seed")) if isinstance(it, dict) else (f"L{i+1:02d}", it, None) for i, it in enumerate(items)]
 
 
 def main(argv=None):
@@ -162,8 +163,9 @@ def main(argv=None):
     if a.mode == "ultimate" and ref_text:
         gen.update(prompt_wav_path=ref_wav, prompt_text=ref_text)
     rows = []
-    for i, (lid, text) in enumerate(lines):
-        torch.manual_seed(seed + i)
+    for i, (lid, text, own_seed) in enumerate(lines):
+        line_seed = int(own_seed) if own_seed is not None else seed + i
+        torch.manual_seed(line_seed)
         t = time.time()
         said_text = spoken(text)
         wav = m.generate(text=said_text, **gen)
@@ -183,7 +185,7 @@ def main(argv=None):
             if subprocess.run([ff, "-v", "error", "-y", "-i", str(raw), "-filter:a", f"atempo={tempo}", str(dest)]).returncode != 0:
                 die(f"tempo {tempo} failed on {lid}")
             dur = sf.info(dest).duration
-        rows.append(dict(id=lid, text=text, said=said_text if said_text != text else None, duration_s=round(dur, 3), synth_s=round(dt, 2), rtf=round(dt / max(len(wav) / sr, 1e-6), 3)))
+        rows.append(dict(id=lid, text=text, seed=line_seed, said=said_text if said_text != text else None, duration_s=round(dur, 3), synth_s=round(dt, 2), rtf=round(dt / max(len(wav) / sr, 1e-6), 3)))
         print(f"{lid}: {dur:.2f}s audio in {dt:.1f}s (RTF {dt/max(len(wav)/sr,1e-6):.2f})", file=sys.stderr)
     peak = torch.mps.driver_allocated_memory() / 2**30 if a.device == "mps" else 0
     summary = dict(sr=sr, load_s=round(load_s, 1), dtype=m.tts_model.config.dtype, voice=voice.get("name"), voice_version=voice.get("version"),
