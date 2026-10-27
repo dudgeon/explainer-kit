@@ -9,6 +9,9 @@
 # The lock is $GPU_LOCK if set, else .gpu.lock in the kit's folder. KIT_SKIP_PREFLIGHT=1 skips the preflight (tests).
 set -u
 here="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; kit="$(dirname "$here")"
+# Homebrew's folders, in case this shell doesn't have them on its PATH (a non-login shell, or an agent's).
+for d in /opt/homebrew/bin /usr/local/bin; do [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$PATH:$d" ;; esac; done
+export PATH
 task=""; kind="--exclusive"
 while [ $# -gt 0 ]; do case "$1" in
   --task) task="${2:?--task needs a task name}"; shift 2 ;;

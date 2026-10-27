@@ -67,6 +67,8 @@ Before any heavy job (narrating, rendering, training, making music), the kit che
    ./setup.sh
    ```
 
+   Run it in Terminal yourself, not through Claude: Claude Code's sandbox blocks the downloads' certificate checks and the writes outside this folder that setup needs, and setup stops with a message saying so if it is run there.
+
    This checks your tools, installs the video packages and downloads the house voice and the speech checker (about 6.5 GB). It takes about [[WP8: setup time on a typical connection]]. If macOS says "permission denied", run `bash setup.sh` instead.
 
 Optional parts, any time later (Claude will offer them when you need them):
@@ -77,6 +79,19 @@ Optional parts, any time later (Claude will offer them when you need them):
 - `./setup.sh --music` to make your own music beds.
 
 You can run setup again at any time: it skips what is already done. `./setup.sh --check` shows what is installed without changing anything, and which of your voices can narrate now. Setup is the only step that uses the internet. After it finishes, the kit works offline.
+
+### Behind a company network or a model mirror
+
+Setup is the only step that uses the internet, and everything it downloads comes through three tools, each of which can be pointed at your organisation's own mirror:
+
+- **Models** come from Hugging Face. Set `HF_ENDPOINT` to your mirror's address (for example `export HF_ENDPOINT=https://your-mirror.example.com/huggingface`). The mirror needs the exact versions the kit pins (the lock files); setup checks every file's fingerprint, so another version won't load.
+- **Python packages** come through `uv`. Set `UV_INDEX_URL` (or `UV_DEFAULT_INDEX`) to your package mirror, or put it in `~/.config/uv/uv.toml`. uv also downloads Python 3.12 itself; `UV_PYTHON_INSTALL_MIRROR` points that at a mirror.
+- **Video packages** come through `npm`. Your usual npm registry setting (`npm config set registry ...`) applies.
+- **The renderer's Chrome**: if Google Chrome is installed, the kit uses it and downloads nothing; otherwise Remotion downloads its own headless Chrome (about 150 MB).
+
+If your network inspects HTTPS with its own certificate, set `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` to your organisation's certificate bundle. When a download is refused, setup says which host refused it, the status code, and what to try.
+
+**Where the models come from.** `models-origin.json` lists every model the kit can fetch: who made it, the country, its licence and what the kit uses it for, so you can check it against your organisation's rules before you start. Today both narration engines (Qwen3-TTS for the house voice and quick clone, VoxCPM2 for a fine-tune) come from China.
 
 ## Start
 

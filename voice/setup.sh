@@ -7,6 +7,9 @@
 # Models go to ${KIT_VOICE_MODELS:-${KIT_MODELS:-~/Library/Caches/explainer-kit/models}} (5 GB for VoxCPM2). Needs Apple silicon and uv.
 set -eu
 root="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Homebrew's folders, in case this shell doesn't have them on its PATH (a non-login shell, or an agent's).
+for d in /opt/homebrew/bin /usr/local/bin; do [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$PATH:$d" ;; esac; done
+export PATH
 models="${KIT_VOICE_MODELS:-${KIT_MODELS:-$HOME/Library/Caches/explainer-kit/models}}"
 eval_too=0; from="${KIT_VOICE_MODELS_FROM:-}"
 while [ $# -gt 0 ]; do case $1 in

@@ -47,9 +47,12 @@ def main():
             print(f"{name}: cloning from {a.src} (cp -c, no extra disk)")
             subprocess.run(["cp", "-cR", str(Path(a.src).expanduser() / name), str(d)], check=True)
         else:
-            from huggingface_hub import snapshot_download
+            # The kit's downloader explains a refusal (host, status, what to try) instead of printing a traceback.
             print(f"{name}: downloading {spec['hf_repo']} @ {spec['revision'][:8]}")
-            snapshot_download(spec["hf_repo"], revision=spec["revision"], local_dir=str(d), allow_patterns=list(spec["files"]))
+            r = subprocess.run([sys.executable, "-I", str(ROOT.parent / "scripts/download_model.py"), spec["hf_repo"],
+                                spec["revision"], str(d), "--files", ",".join(spec["files"])])
+            if r.returncode:
+                sys.exit(r.returncode)
         print(f"{name}: checking sha256 ...")
         bad = verify(d, spec)
         if bad:

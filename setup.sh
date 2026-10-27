@@ -24,6 +24,9 @@
 # Needs an Apple-silicon Mac with Homebrew tools: uv, ffmpeg, node 22 or newer.
 set -u
 root="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Homebrew's folders, in case this shell doesn't have them on its PATH (a non-login shell, or an agent's).
+for d in /opt/homebrew/bin /usr/local/bin; do [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$PATH:$d" ;; esac; done
+export PATH
 export KIT_MODELS="${KIT_MODELS:-$HOME/Library/Caches/explainer-kit/models}"
 vquick=0; vspeak=0; vtrain=0; music=0; check=0; from="${KIT_MODELS_FROM:-}"; only=""
 while [ $# -gt 0 ]; do case "$1" in
@@ -42,10 +45,33 @@ while [ $# -gt 0 ]; do case "$1" in
 want() { [ -z "$only" ] || case ",$only," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 say()  { printf '%s\n' "$*"; }
 todo=0   # things --check found missing
-act()  { # act <description> <command...>: run it, or in --check mode say it would be done
-  local d="$1"; shift
-  if [ $check = 1 ]; then say "  would: $d"; todo=$((todo + 1)); else say "  $d"; "$@"; fi
+act()  { # act <description> <command...>: run it, or in --check mode say it would be done. A step that fails stops
+        # setup there, so a later step can't fail on its account and hide the real cause.
+  local d="$1" s; shift
+  if [ $check = 1 ]; then say "  would: $d"; todo=$((todo + 1)); return 0; fi
+  say "  $d"
+  "$@" && return 0
+  s=$?
+  say ""; say "setup: stopped. This step failed: $d"
+  say "  The lines above say why. Fix that, then run ./setup.sh again: it skips what is already done."
+  exit "$s"
 }
+
+# ---- 0. Can setup write where it needs to? ----------------------------------------------------------------------------
+# Setup writes outside the kit folder (models to $KIT_MODELS, Python and package caches under ~/.cache and ~/Library).
+# An agent's sandbox (Claude Code's, for one) blocks those writes and certificate checks, and the failures that follow
+# are confusing. Say so plainly instead.
+if [ $check = 0 ] && [ -z "$only" ]; then
+  probe="$KIT_MODELS/.setup-probe.$$"
+  if ! { mkdir -p "$KIT_MODELS" 2>/dev/null && : > "$probe" 2>/dev/null; }; then
+    say "setup: can't write to $KIT_MODELS, where the models go."
+    say "  If Claude Code (or another agent) is running this, its sandbox blocks writing outside the kit folder and"
+    say "  the certificate checks downloads need. Run ./setup.sh in Terminal instead (it is the only step that needs to)."
+    say "  To keep the models somewhere else, set KIT_MODELS to a folder you can write to."
+    exit 2
+  fi
+  rm -f "$probe"
+fi
 
 # ---- 1. Tools --------------------------------------------------------------------------------------------------------
 missing=0
@@ -131,12 +157,10 @@ _clone() {  # APFS clone; falls back to a plain copy on another volume
   { cp -c -R "$1" "$2.partial" 2>/dev/null || cp -R "$1" "$2.partial"; } || return 1
   rm -rf "$2"; mv "$2.partial" "$2" && echo "$3" > "$2/.kit-revision"
 }
-_download() {  # uses the narration venv's huggingface_hub; the only network use in the kit
+_download() {  # uses the narration venv's huggingface_hub; the only network use in the kit. HF_ENDPOINT picks a mirror.
   local py="$root/video/voice/.venv/bin/python"
   [ -x "$py" ] || { echo "setup: the narration environment is missing; run ./setup.sh first" >&2; return 1; }
-  mkdir -p "$2" && "$py" -I -c '
-import sys; from huggingface_hub import snapshot_download
-snapshot_download(sys.argv[1], revision=sys.argv[3], local_dir=sys.argv[2])' "$1" "$2" "$3" && echo "$3" > "$2/.kit-revision"
+  mkdir -p "$2" && "$py" -I "$root/scripts/download_model.py" "$1" "$3" "$2" && echo "$3" > "$2/.kit-revision"
 }
 if want models; then
   say "models in $KIT_MODELS"
@@ -183,7 +207,7 @@ _voxcpm() {  # _voxcpm <preflight task> <what> <smaller-Mac advice> [voice/setup
   if [ -x "$root/voice/.venv/bin/python" ] && [ "$(cat "$root/voice/.venv/.requirements.sha256" 2>/dev/null)" = "$vreq" ] \
      && [ -f "$KIT_MODELS/VoxCPM2/.kit-revision" ]; then
     say "  voice/.venv: up to date; VoxCPM2: present ($(cat "$KIT_MODELS/VoxCPM2/.kit-revision"))"
-  elif [ $check = 1 ]; then say "  would: voice/setup.sh ${vargs[*]}  (VoxCPM2 and its venv; models to $KIT_MODELS)"; todo=$((todo + 1))
+  elif [ $check = 1 ]; then say "  would: voice/setup.sh ${vargs[*]+${vargs[*]}}  (VoxCPM2 and its venv; models to $KIT_MODELS)"; todo=$((todo + 1))
   else KIT_MODELS="$KIT_MODELS" "$root/voice/setup.sh" "${vargs[@]+"${vargs[@]}"}" || exit $?; fi
 }
 if [ $vtrain = 1 ] && [ -z "$only" ]; then

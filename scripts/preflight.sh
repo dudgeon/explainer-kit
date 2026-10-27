@@ -41,42 +41,69 @@ num() { awk -v v="$1" 'BEGIN{printf "%.1f", v}'; }
 lt()  { awk -v a="$1" -v b="$2" 'BEGIN{exit !(a+0 < b+0)}'; }
 
 # ---- Measurements --------------------------------------------------------------------------------------------------
-mem_bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+# Every reading can fail: a sandboxed shell (an agent's, say) may block sysctl, vm_stat or top. A reading that fails
+# is "unknown" and said so; it never stands in as a small Mac, no swap or normal pressure.
+mp="$(memory_pressure -Q 2>/dev/null || true)"
+mem_bytes=$(sysctl -n hw.memsize 2>/dev/null || true)
+case "$mem_bytes" in ''|0|*[!0-9]*) mem_bytes=$(printf '%s\n' "$mp" | awk '/The system has/ {for(i=1;i<=NF;i++) if($i ~ /^[0-9]+$/){print $i; exit}}') ;; esac
+case "$mem_bytes" in ''|0|*[!0-9]*) mem_bytes="" ;; esac
 if [ -n "${KIT_FAKE_MEMSIZE:-}" ]; then
-  mem_gib=$(num "$KIT_FAKE_MEMSIZE"); fake_note=" (simulated by KIT_FAKE_MEMSIZE; this Mac really has $(gib "$mem_bytes") GiB)"
-else
+  mem_gib=$(num "$KIT_FAKE_MEMSIZE"); real="an unknown amount"; [ -n "$mem_bytes" ] && real="$(gib "$mem_bytes") GiB"
+  fake_note=" (simulated by KIT_FAKE_MEMSIZE; this Mac really has $real)"
+elif [ -n "$mem_bytes" ]; then
   mem_gib=$(gib "$mem_bytes"); fake_note=""
+else
+  mem_gib=""; fake_note=""
 fi
 # Marketing sizes are a little under the nominal figure (16 GB reads 16.0 GiB here, but be tolerant of rounding).
-tier=$(awk -v g="$mem_gib" 'BEGIN{ if (g>=31.5) print 32; else if (g>=23.5) print 24; else print 16 }')
+tier=""; [ -n "$mem_gib" ] && tier=$(awk -v g="$mem_gib" 'BEGIN{ if (g>=31.5) print 32; else if (g>=23.5) print 24; else print 16 }')
 
-pagesize=$(vm_stat 2>/dev/null | awk '/page size of/ {for(i=1;i<=NF;i++) if($i ~ /^[0-9]+$/){print $i; exit}}')
-pagesize=${pagesize:-16384}
-pages=$(vm_stat 2>/dev/null | awk '/^Pages (free|inactive|speculative|purgeable)/ {gsub("\\.","",$NF); s+=$NF} END{print s+0}')
-avail_bytes=$((pages * pagesize))
-if [ -n "${KIT_FAKE_AVAILABLE:-}" ]; then avail_gib=$(num "$KIT_FAKE_AVAILABLE"); else avail_gib=$(gib "$avail_bytes"); fi
+vm="$(vm_stat 2>/dev/null || true)"
+pagesize=$(printf '%s\n' "$vm" | awk '/page size of/ {for(i=1;i<=NF;i++) if($i ~ /^[0-9]+$/){print $i; exit}}')
+pages=$(printf '%s\n' "$vm" | awk '/^Pages (free|inactive|speculative|purgeable)/ {gsub("\\.","",$NF); s+=$NF; n++} END{if (n) print s+0}')
+avail_gib=""
+[ -n "$pagesize" ] && [ -n "$pages" ] && avail_gib=$(gib $((pages * pagesize)))
+[ -n "${KIT_FAKE_AVAILABLE:-}" ] && avail_gib=$(num "$KIT_FAKE_AVAILABLE")
 
-swap_line=$(sysctl -n vm.swapusage 2>/dev/null || echo "")
+swap_line=$(sysctl -n vm.swapusage 2>/dev/null || true)
 swap_used_gib=$(printf '%s' "$swap_line" | awk '{for(i=1;i<=NF;i++) if($i=="used"){v=$(i+2); u=substr(v,length(v)); n=v+0; if(u=="M") n=n/1024; else if(u=="K") n=n/1048576; printf "%.2f", n; exit}} END{}')
-swap_used_gib=${swap_used_gib:-0.00}
 [ -n "${KIT_FAKE_SWAP_USED:-}" ] && swap_used_gib=$(num "$KIT_FAKE_SWAP_USED")
 
-free_pct=$(memory_pressure -Q 2>/dev/null | awk -F: '/free percentage/ {gsub(/[ %]/,"",$2); print $2}')
-level=$(sysctl -n kern.memorystatus_vm_pressure_level 2>/dev/null || echo 1)
-case "$level" in 1) pressure=normal ;; 2) pressure=warn ;; 4) pressure=critical ;; *) pressure="level $level" ;; esac
+free_pct=$(printf '%s\n' "$mp" | awk -F: '/free percentage/ {gsub(/[ %]/,"",$2); print $2}')
+level=$(sysctl -n kern.memorystatus_vm_pressure_level 2>/dev/null || true)
+case "$level" in 1) pressure=normal ;; 2) pressure=warn ;; 4) pressure=critical ;; '') pressure="unknown (couldn't read it here)" ;; *) pressure="level $level" ;; esac
 
+unknown="unknown (couldn't read it here; a sandboxed shell can block this, so run it in Terminal)"
+or() { if [ -n "$1" ]; then printf '%s' "$2"; else printf '%s' "$unknown"; fi; }
 echo "preflight: $task ($what)"
-echo "  memory installed   : $mem_gib GiB$fake_note"
-echo "  free + reclaimable : $avail_gib GiB (vm_stat free + inactive + speculative + purgeable)"
-echo "  swap in use        : $swap_used_gib GiB"
+echo "  memory installed   : $(or "$mem_gib" "$mem_gib GiB")$fake_note"
+echo "  free + reclaimable : $(or "$avail_gib" "$avail_gib GiB (vm_stat free + inactive + speculative + purgeable)")"
+echo "  swap in use        : $(or "$swap_used_gib" "$swap_used_gib GiB")"
 echo "  memory pressure    : $pressure${free_pct:+, $free_pct% of memory free}"
-echo "  top processes by memory (RSS, apps grouped with their helpers):"
-ps -axo rss=,comm= 2>/dev/null | awk '
-  { rss=$1; $1=""; sub(/^ /,""); p=$0
-    if (match(p, /[^\/]+\.app/)) name=substr(p, RSTART, RLENGTH-4); else { n=split(p, a, "/"); name=a[n] }
-    sum[name]+=rss }
-  END { for (k in sum) printf "%d\t%s\n", sum[k], k }' | sort -rn | head -12 |
-  awk -F'\t' '{ printf "    %6.2f GiB  %s\n", $1/1048576, $2 }'
+# Memory footprint (top's MEM: what an app holds, compressed and swapped out included), not resident size: an app
+# whose memory has gone to swap has a small RSS and would never be named. Helpers are grouped with their app.
+# top gives each process's footprint by pid; ps gives the full name (top cuts names at 16 characters).
+procs="$( { ps -axo pid=,comm= 2>/dev/null | sed 's/^ *//'; echo "--"; top -l 1 -o mem -n 80 -stats pid,mem 2>/dev/null; } | awk '
+  $0=="--" { t=1; next }
+  !t { pid=$1; $1=""; sub(/^ /,""); p=$0
+       if (match(p, /[^\/]+\.app/)) nm=substr(p, RSTART, RLENGTH-4); else { k=split(p, a, "/"); nm=a[k] }
+       sub(/ Helper.*$/,"",nm); name[pid]=nm; next }
+  f && NF==2 && ($1 in name) { v=$2; sub(/[+-]$/,"",v); u=substr(v,length(v)); n=v+0
+       if (u=="G") n*=1048576; else if (u=="M") n*=1024; else if (u=="B") n/=1024
+       sum[name[$1]]+=n }
+  $1=="PID" { f=1 }
+  END { for (k in sum) printf "%d\t%s\n", sum[k], k }' | sort -rn | head -12)"
+if [ -n "$procs" ]; then
+  echo "  top apps by memory (footprint, including compressed and swapped; helpers grouped with their app):"
+else  # top unavailable: resident size from ps, which misses memory an app has swapped out
+  echo "  top apps by memory (resident only: top couldn't run, so apps with swapped-out memory look smaller):"
+  procs="$(ps -axo rss=,comm= 2>/dev/null | awk '
+    { rss=$1; $1=""; sub(/^ /,""); p=$0
+      if (match(p, /[^\/]+\.app/)) name=substr(p, RSTART, RLENGTH-4); else { n=split(p, a, "/"); name=a[n] }
+      sum[name]+=rss }
+    END { for (k in sum) printf "%d\t%s\n", sum[k], k }' | sort -rn | head -12)"
+fi
+printf '%s\n' "$procs" | awk -F'\t' 'NF==2 { printf "    %6.2f GiB  %s\n", $1/1048576, $2 }'
 echo "  need for this task : about $need GiB free, a $min GB or larger Mac ($NEED_NOTE)"
 
 # ---- Verdict --------------------------------------------------------------------------------------------------------
@@ -88,7 +115,10 @@ refuse() { echo; echo "preflight: NO. $1"; [ -n "${2:-}" ] && printf '%s\n' "$2"
 
 if [ "$task" = voice-quick ]; then echo; printf '%s\n' "$QUICK_WARNING"; fi
 
-if lt "$mem_gib" "$min"; then
+if [ -z "$mem_gib" ]; then
+  echo; echo "preflight: note. Couldn't tell how much memory this Mac has, so this check can't say whether it is big enough"
+  echo "  for this task (it needs a $min GB or larger Mac). Run it in Terminal to find out; going by free memory only."
+elif lt "$mem_gib" "$min"; then
   case "$task:$tier" in
     train-full:16) refuse "Fine-tuning needs a 32 GB or larger Mac, and this one has 16 GB." \
 "  What a 16 GB Mac gets is the quick clone (task voice-quick, set up with ./setup.sh --voice-quick): one short reading of your voice, ready in minutes.
@@ -113,15 +143,19 @@ if [ "$task" = train-full ] && [ "$tier" = 24 ]; then
 fi
 
 # Setup uses this to gate --voice-train on the size of the Mac alone, whatever is running right now.
-if [ "${KIT_PREFLIGHT_SIZE_ONLY:-}" = 1 ]; then echo; echo "preflight: ok. $tier GB tier is big enough for this task."; exit 0; fi
+if [ "${KIT_PREFLIGHT_SIZE_ONLY:-}" = 1 ]; then
+  if [ -n "$tier" ]; then echo; echo "preflight: ok. $tier GB tier is big enough for this task."
+  else echo; echo "preflight: ok, unmeasured. The size of this Mac couldn't be read; not refusing on size."; fi
+  exit 0
+fi
 
 # Enough memory installed; is enough of it free right now?
 short=""
-lt "$avail_gib" "$need" && short="only $avail_gib GiB is free or reclaimable and this task wants about $need GiB"
+[ -n "$avail_gib" ] && lt "$avail_gib" "$need" && short="only $avail_gib GiB is free or reclaimable and this task wants about $need GiB"
 # Swap that was used earlier and has not drained is not pressure now: it only blocks when memory is also short
 # or the system reports pressure. Otherwise it is a warning.
 swap_note=""
-lt 2.0 "$swap_used_gib" && swap_note="$swap_used_gib GiB of swap is in use from earlier; it does not drain until apps restart, so this is a note, not a stop"
+[ -n "$swap_used_gib" ] && lt 2.0 "$swap_used_gib" && swap_note="$swap_used_gib GiB of swap is in use from earlier; it does not drain until apps restart, so this is a note, not a stop"
 [ "$level" -ge 2 ] 2>/dev/null && short="${short:+$short; }memory pressure is $pressure"
 if [ -n "$short" ]; then
   echo; echo "preflight: WAIT. $short."
@@ -132,6 +166,11 @@ if [ -n "$short" ]; then
   fi
   exit 3
 fi
-echo; echo "preflight: ok. $tier GB tier, $avail_gib GiB free for a task that wants about $need GiB."
+if [ -z "$avail_gib" ]; then
+  echo; echo "preflight: ok, unmeasured. Free memory couldn't be read here, so this job starts without the check. If the Mac"
+  echo "  slows down or the job stalls, quit large apps, or run it from Terminal where the check works."
+else
+  echo; echo "preflight: ok. ${tier:+$tier GB tier, }$avail_gib GiB free for a task that wants about $need GiB."
+fi
 [ -n "$swap_note" ] && echo "  note: $swap_note."
 exit 0

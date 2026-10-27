@@ -8,6 +8,8 @@ The kit's own code and text are MIT-licensed (see LICENSE). Everything below bel
 
 ## Speech models (fetched by setup, revisions pinned in the lock files)
 
+Who made each model and in which country is in `models-origin.json`.
+
 | Model | Licence | Source | Use here |
 |---|---|---|---|
 | mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16 | Apache-2.0 (model card) | Alibaba Qwen team; MLX conversion by mlx-community | the house voice engine and the quick clone of your own voice |

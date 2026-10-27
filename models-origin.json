@@ -1,0 +1,60 @@
+{
+  "_note": "Who made each model the kit can fetch, and where, so an organisation that restricts models by origin can check without research. Publishers are as the model cards name them; countries are the publishers' home countries from public information, not from the cards, so confirm them in your own review. The revisions are pinned in the lock files named under `lock`. `setup` is the setup.sh option that fetches the model; `role` is what the kit uses it for.",
+  "models": [
+    {
+      "repo": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+      "made_by": "Qwen team, Alibaba Cloud (MLX conversion by the mlx-community volunteers)",
+      "country": "China",
+      "licence": "Apache-2.0",
+      "lock": "video/voice/models.lock.json",
+      "setup": "./setup.sh (always)",
+      "role": "narration: the house voice, and the quick clone of your own voice"
+    },
+    {
+      "repo": "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16",
+      "made_by": "Qwen team, Alibaba Cloud (MLX conversion by mlx-community)",
+      "country": "China",
+      "licence": "Apache-2.0",
+      "lock": "video/voice/models.lock.json",
+      "setup": "not fetched by setup",
+      "role": "designing a new synthetic voice from a text description (how the house voice was made)"
+    },
+    {
+      "repo": "mlx-community/parakeet-tdt-0.6b-v3",
+      "made_by": "NVIDIA (MLX conversion by mlx-community)",
+      "country": "United States",
+      "licence": "CC-BY-4.0",
+      "lock": "video/voice/models.lock.json",
+      "setup": "./setup.sh (always)",
+      "role": "speech check: confirms each narrated line says what the script says"
+    },
+    {
+      "repo": "openbmb/VoxCPM2",
+      "made_by": "OpenBMB (ModelBest and Tsinghua University)",
+      "country": "China",
+      "licence": "Apache-2.0",
+      "lock": "voice/models.lock.json",
+      "setup": "./setup.sh --voice-speak or --voice-train",
+      "role": "narration and training: a fine-tuned copy of your own voice"
+    },
+    {
+      "repo": "speechbrain/spkrec-ecapa-voxceleb",
+      "made_by": "SpeechBrain, an open-source academic project",
+      "country": "France and Canada (academic)",
+      "licence": "Apache-2.0",
+      "lock": "voice/models.lock.json",
+      "setup": "./setup.sh --voice-quick or --voice-train",
+      "role": "measuring how close a voice sounds to its reference recording"
+    },
+    {
+      "repo": "ACE-Step/Ace-Step1.5",
+      "made_by": "ACE Studio and StepFun",
+      "country": "China",
+      "licence": "MIT",
+      "lock": "video/score/models.lock.json",
+      "setup": "./setup.sh --music (optional; the kit ships a music bed)",
+      "role": "generating a music bed"
+    }
+  ],
+  "narration_engines": "Every way the kit can narrate today uses a model from China: Qwen3-TTS (house voice, quick clone) or VoxCPM2 (fine-tune). An organisation that blocks Chinese-origin models can't narrate with the kit yet; the rest (scripts, drawings, rendering, the speech check) doesn't depend on them."
+}
