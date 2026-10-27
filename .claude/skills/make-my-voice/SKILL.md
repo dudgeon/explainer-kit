@@ -1,6 +1,6 @@
 ---
 name: make-my-voice
-description: Make a narrator from the user's own recorded voice, as a quick clone (any Mac) or a fine-tune (32 GB Macs), and use it for films. Use when the user says "use my voice", "clone my voice", "record my voice", "train my voice", "narrate in my own voice" or "make my voice".
+description: Make a narrator from the user's own recorded voice, as a quick clone (any Mac) or a fine-tune (32 GB Macs), or bring in a voice they already made on another Mac, and use it for films. Use when the user says "use my voice", "clone my voice", "record my voice", "train my voice", "narrate in my own voice", "make my voice", "I have a voice already", "import my voice" or "I made a voice on my other Mac".
 ---
 
 # Make my voice
@@ -10,6 +10,10 @@ The user records on their phone; you check each recording, build the voice and h
 Privacy, said to the user at the start: the recordings, training runs and voices stay on this Mac, in `voice/takes/`, `voice/runs/` and `voice/voices/`, which git ignores. Nothing is uploaded.
 
 Heavy commands go through `scripts/run-heavy.sh`. If it exits 3, list the apps it names and ask "I quit them, check again" / "Use the quick clone instead" / "Stop for now".
+
+## 0. New voice, or one they already have?
+
+First look at what is here: `node video/pipeline/voices.mjs` (light, no lock). If the user's message doesn't already say, ask: "Make a new voice" / "I already made one (on another Mac, or in an earlier copy of the kit)". If they already have one, follow **Bring a voice you already have** at the end of this file instead of steps 1 to 9.
 
 ## 1. Consent and a name
 
@@ -147,7 +151,50 @@ scripts/check-repo.sh
 ## 10. Use it, and what to know
 
 - A film uses the voice named in `video/films/<film>/voice.json`: `{"voice": "<name>"}` or `{"voice": "<name>-quick"}`. `--voice <name>` on a build tries it once without changing the file.
-- Narrating with your voice: add `--task voice-quick` (quick clone) or `--task voice-voxcpm` (fine-tune) after `scripts/run-heavy.sh` in the make-explainer commands.
+- Narrating with your voice: add `--task voice-quick` (quick clone) or `--task voice-voxcpm` (fine-tune) after `scripts/run-heavy.sh` in the make-explainer commands. `node video/pipeline/voices.mjs` says which kind each voice is.
 - Changing a film's voice re-narrates and re-renders all of it.
 - A voice is just a folder. Keep old folders to keep older films sounding the same. To keep voices somewhere else (another disk, say), move the folders there and set `KIT_VOICE_DIR` to that folder; `--voice` also accepts a folder path.
 - The voice is personal data. Never share `voice/voices/`, `voice/takes/` or `voice/runs/`.
+- To use it on another Mac, the user copies its folder there themselves (AirDrop, a USB drive) and that Mac's kit brings it in with the steps below. Never through git, a fork or a shared folder.
+
+## Bring a voice you already have
+
+A voice is one folder: `voice.json`, a reference clip and the words it says, and for a fine-tune `lora_weights.safetensors` and `lora_config.json`. Nothing needs re-recording or re-training.
+
+1. **Consent.** Ask as in step 1: "Is this your own voice?" If the folder has no `CONSENT.md`, write one after step 3 (whose voice, that they agreed, today's date, what it may be used for).
+2. **Copy it in.** Ask where the folder is now: AirDrop (usually `~/Downloads`), a USB drive, iCloud Drive, or another path. If it came as a ZIP, unzip it first (`ditto -x -k "<zip>" "<a new folder>"`). Copy it, don't move it, keeping its name unless it clashes with one here:
+
+   ```
+   cp -R "<the voice folder>" voice/voices/<name>
+   ```
+
+   If the user keeps all their voices in one place they would rather not copy (another disk, say), `KIT_VOICE_DIR` can point at it instead, but it must be set for every command; copying is simpler, so recommend that.
+3. **Check it.**
+
+   ```
+   node video/pipeline/voices.mjs --voice <name>
+   ```
+
+   Say what it reports in plain words:
+   - **ready**: go to step 4.
+   - **NOT READY**, the VoxCPM2 model or its environment isn't there: run `./setup.sh --voice-speak` (about 5 GB; Macs with 24 GB or more) in the background, then check again.
+   - **NOT READY**, something missing from the folder (no `voice.json`, no reference clip, no words for it, no LoRA weights): the copy is incomplete. Ask the user to copy the whole folder again.
+   - Note **too small to narrate with a fine-tune**: this Mac can't speak with it. Offer a quick clone made from the same reference clip (below) or the house voice.
+   - Note **trained on VoxCPM2 … but this kit uses …**: the fine-tune was made against a different base model. It may still sound right; listen in step 4 before using it for a film, and if it sounds wrong, use the quick clone made from its reference clip.
+4. **Listen.** A short draft of the example film, no music, with the task for its kind (`voice-voxcpm` for a fine-tune, `voice-quick` for a quick clone):
+
+   ```
+   scripts/run-heavy.sh --task <voice-voxcpm or voice-quick> node video/build.mjs --film example --voice <name> --draft --no-score
+   ```
+
+   Send `video/out/example/example-draft.mp4` and ask: "Sounds like me" / "Something's off". Then tell the user the voice is ready, and that make-explainer will offer it (and recommend it) for every new film.
+
+**A quick clone from a fine-tune's folder** (a Mac under 24 GB, or a fine-tune that sounds wrong here). It uses the same reference clip with the quick-clone engine, so it needs only the base setup:
+
+```
+mkdir -p voice/voices/<name>-quick
+cp voice/voices/<name>/reference.wav voice/voices/<name>-quick/reference.wav
+cp voice/voices/<name>/reference.txt voice/voices/<name>-quick/reference.txt
+```
+
+(Use the file names its `voice.json` gives in `ref_wav` and `ref_text_file`; if it has `ref_text` instead, put those words in `reference.txt`.) Write its `voice.json` as in step 6 and copy `CONSENT.md` across, then check and listen as above with `--task voice-quick`. Say plainly what the quick clone can and cannot do (the wording in step 2).

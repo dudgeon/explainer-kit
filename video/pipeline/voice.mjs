@@ -71,7 +71,7 @@ export function voiceSetup({here, paths, voice: asked}) {
     // The weights, where speak.py looks for them, so a missing model stops the build here, not mid-voicing.
     const model = join((process.env.KIT_VOICE_MODELS || process.env.KIT_MODELS || join(homedir(), 'Library/Caches/explainer-kit/models')).replace(/^~(?=\/|$)/, homedir()), 'VoxCPM2');
     for (const [what, f] of [['venv python', python], ['speak script', script], ['VoxCPM2 model', join(model, 'model.safetensors')]])
-      if (!existsSync(f)) throw new BuildError(`voice: ${name} is a VoxCPM2 voice, but the own-voice ${what} ${f} isn't there. Run ./setup.sh --voice-train, or use --voice house.`);
+      if (!existsSync(f)) throw new BuildError(`voice: ${name} is a VoxCPM2 voice, but the own-voice ${what} ${f} isn't there. Run ./setup.sh --voice-speak (or --voice-train, which includes it), or use --voice house.`);
     const lora = card.lora ? at(card.lora) : null;
     if (lora && !existsSync(join(lora, 'lora_weights.safetensors'))) throw new BuildError(`voice: the LoRA ${join(lora, 'lora_weights.safetensors')} isn't there`);
     const reqs = join(tool, 'requirements/voxcpm.txt');

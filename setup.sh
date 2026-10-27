@@ -6,13 +6,17 @@
 #   ./setup.sh --voice-quick   also what the quick clone of your own voice needs (any Mac, 16 GB is fine): the
 #                              take checker's environment (voice/.venv-eval) and the Parakeet and ECAPA models.
 #                              Does not fetch VoxCPM2 or its training environment.
+#   ./setup.sh --voice-speak   also narrating with a fine-tuned voice you already have (made on another Mac, say):
+#                              the VoxCPM2 model (about 5 GB) and its environment, without the training extras.
+#                              24 GB or larger Macs; setup refuses on a smaller one.
 #   ./setup.sh --voice-train   also fine-tuning your voice: adds the VoxCPM2 model (about 5 GB) and its training
 #                              environment (about 2.6 GB of venvs in all). 32 GB or larger Macs only; setup
 #                              refuses on a smaller one (scripts/preflight.sh train-full says why). Includes --voice-quick.
 #   ./setup.sh --music         also set up making your own music beds (ACE-Step; about 9.4 GB of models)
 #   ./setup.sh --from DIR      clone models you already have on this Mac from DIR (APFS `cp -c`: instant, no extra
 #                              disk) instead of downloading them
-#   ./setup.sh --check         change nothing: print what is installed, what is missing and what would be done
+#   ./setup.sh --check         change nothing: print what is installed, what is missing and what would be done, and
+#                              which of your voices (voice/voices/ or $KIT_VOICE_DIR) can narrate now
 #   ./setup.sh --only a,b      run only these steps: deps, venv, npm, chrome, models (for repairs and tests)
 # Models go to $KIT_MODELS (default ~/Library/Caches/explainer-kit/models). Every download is pinned: Python
 # packages by the requirements files, models by the commit in each models.lock.json. Setup is the only step that
@@ -21,16 +25,17 @@
 set -u
 root="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export KIT_MODELS="${KIT_MODELS:-$HOME/Library/Caches/explainer-kit/models}"
-vquick=0; vtrain=0; music=0; check=0; from="${KIT_MODELS_FROM:-}"; only=""
+vquick=0; vspeak=0; vtrain=0; music=0; check=0; from="${KIT_MODELS_FROM:-}"; only=""
 while [ $# -gt 0 ]; do case "$1" in
   --voice-quick) vquick=1; shift ;;
+  --voice-speak) vspeak=1; shift ;;
   --voice-train) vtrain=1; vquick=1; shift ;;
-  --voice) echo "setup: --voice is now two options: --voice-quick (quick clone, any Mac) and --voice-train (fine-tuning, 32 GB or larger)" >&2; exit 2 ;;
+  --voice) echo "setup: --voice is now three options: --voice-quick (quick clone, any Mac), --voice-speak (narrate with a fine-tuned voice you have, 24 GB or larger) and --voice-train (fine-tuning, 32 GB or larger)" >&2; exit 2 ;;
   --music) music=1; shift ;;
   --check|--dry-run) check=1; shift ;;
   --from) from="${2:?--from needs a folder}"; shift 2 ;;
   --only) only="${2:?--only needs a list of steps}"; shift 2 ;;
-  -h|--help) sed -n 2,22p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n 2,26p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "setup: unknown option $1 (see ./setup.sh --help)" >&2; exit 2 ;; esac; done
 [ -z "$from" ] || from="$(cd -P "$from" 2>/dev/null && pwd)" || { echo "setup: --from folder not found" >&2; exit 2; }
 
@@ -160,26 +165,37 @@ if [ $vquick = 1 ] && [ -z "$only" ]; then
     say "  spkrec-ecapa-voxceleb, parakeet-tdt-0.6b-v3: present"
   else act "fetch spkrec-ecapa-voxceleb and parakeet-tdt-0.6b-v3 (checked against voice/models.lock.json)" _voice_eval_models || exit $?; fi
 fi
-# Fine-tuning: VoxCPM2 and the training environment, through voice/setup.sh. 32 GB or larger only.
-if [ $vtrain = 1 ] && [ -z "$only" ]; then
-  say "your own voice: fine-tuning (VoxCPM2)"
-  if ! KIT_PREFLIGHT_SIZE_ONLY=1 "$root/scripts/preflight.sh" train-full > "${TMPDIR:-/tmp}/kit-preflight.$$" 2>&1; then
+# VoxCPM2 and its environment, through voice/setup.sh. Fine-tuning (32 GB or larger) adds the take checker and scorer;
+# narrating with a fine-tuned voice you already have needs only the model and voice/.venv (24 GB or larger).
+_voxcpm() {  # _voxcpm <preflight task> <what> <smaller-Mac advice> [voice/setup.sh args...]
+  local task="$1" what="$2" advice="$3"; shift 3
+  say "your own voice: $what (VoxCPM2)"
+  if ! KIT_PREFLIGHT_SIZE_ONLY=1 "$root/scripts/preflight.sh" "$task" > "${TMPDIR:-/tmp}/kit-preflight.$$" 2>&1; then
     sed 's/^/  /' "${TMPDIR:-/tmp}/kit-preflight.$$" | sed -n '/preflight: NO/,$p'; rm -f "${TMPDIR:-/tmp}/kit-preflight.$$"
-    say "  setup: skipping --voice-train on this Mac. The quick clone (--voice-quick) works here."
+    say "  setup: skipping $what on this Mac. $advice"
     [ $check = 1 ] || exit 2
-  else
-    rm -f "${TMPDIR:-/tmp}/kit-preflight.$$"
-    if [ ! -x "$root/voice/setup.sh" ]; then say "  voice/setup.sh is not in this copy of the kit; nothing to do."
-    else
-      vargs=(--eval); [ -n "$from" ] && vargs+=(--from "$from")
-      vreq="$(shasum -a 256 "$root/voice/requirements/voxcpm.txt" | cut -d' ' -f1)"
-      if [ -x "$root/voice/.venv/bin/python" ] && [ "$(cat "$root/voice/.venv/.requirements.sha256" 2>/dev/null)" = "$vreq" ] \
-         && [ -f "$KIT_MODELS/VoxCPM2/.kit-revision" ]; then
-        say "  voice/.venv: up to date; VoxCPM2: present ($(cat "$KIT_MODELS/VoxCPM2/.kit-revision"))"
-      elif [ $check = 1 ]; then say "  would:voice/setup.sh ${vargs[*]}  (VoxCPM2 and the training venv; models to $KIT_MODELS)"; todo=$((todo + 1))
-      else KIT_MODELS="$KIT_MODELS" "$root/voice/setup.sh" "${vargs[@]}" || exit $?; fi
-    fi
+    return 0
   fi
+  rm -f "${TMPDIR:-/tmp}/kit-preflight.$$"
+  if [ ! -x "$root/voice/setup.sh" ]; then say "  voice/setup.sh is not in this copy of the kit; nothing to do."; return 0; fi
+  local vargs=("$@"); [ -n "$from" ] && vargs+=(--from "$from")
+  local vreq; vreq="$(shasum -a 256 "$root/voice/requirements/voxcpm.txt" | cut -d' ' -f1)"
+  if [ -x "$root/voice/.venv/bin/python" ] && [ "$(cat "$root/voice/.venv/.requirements.sha256" 2>/dev/null)" = "$vreq" ] \
+     && [ -f "$KIT_MODELS/VoxCPM2/.kit-revision" ]; then
+    say "  voice/.venv: up to date; VoxCPM2: present ($(cat "$KIT_MODELS/VoxCPM2/.kit-revision"))"
+  elif [ $check = 1 ]; then say "  would: voice/setup.sh ${vargs[*]}  (VoxCPM2 and its venv; models to $KIT_MODELS)"; todo=$((todo + 1))
+  else KIT_MODELS="$KIT_MODELS" "$root/voice/setup.sh" "${vargs[@]+"${vargs[@]}"}" || exit $?; fi
+}
+if [ $vtrain = 1 ] && [ -z "$only" ]; then
+  _voxcpm train-full "fine-tuning" "The quick clone (--voice-quick) works here; on 24 GB, --voice-speak narrates with a voice fine-tuned elsewhere." --eval
+elif [ $vspeak = 1 ] && [ -z "$only" ]; then
+  _voxcpm voice-voxcpm "narrating with a fine-tuned voice" "Make a quick clone from the voice's reference clip instead (the make-my-voice skill does it)."
+fi
+
+# ---- Your voices -----------------------------------------------------------------------------------------------------
+# Which voices are here and whether each can narrate now (light: reads files only). Needs node, checked above.
+if [ -z "$only" ] && command -v node >/dev/null; then
+  node "$root/video/pipeline/voices.mjs" || true
 fi
 
 # ---- Done ------------------------------------------------------------------------------------------------------------

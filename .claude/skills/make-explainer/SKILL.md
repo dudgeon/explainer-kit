@@ -18,7 +18,7 @@ Ask, one AskUserQuestion at a time where it has options:
 - The sources: files, links, or pasted text.
 - Who it is for, and the one thing they should remember.
 - Length: options "about 2 minutes" / "about 4 minutes" / "about 6 minutes".
-- Voice: "the house voice", plus one option per folder in `voice/voices/` (or in `KIT_VOICE_DIR` if it is set).
+- Voice: run `node video/pipeline/voices.mjs` first. Offer each voice it lists as ready, the user's own first and marked as your recommendation, then "the house voice". A voice it lists as NOT READY: say in a few words what it needs and offer to fix that first. If the user says they have a voice that isn't listed (made on another Mac, say), bring it in with the make-my-voice skill's **Bring a voice you already have** steps, then come back here.
 - Shape: "square (phones)" / "wide 16:9 (talks, laptops)".
 
 Then:
@@ -95,7 +95,7 @@ The last one draws one still per scene in `video/out/<name>/` (`still-S0.png` ..
 scripts/run-heavy.sh node video/pipeline/voice-only.mjs --film <name>
 ```
 
-With the user's own voice, add `--task voice-quick` (a quick clone) or `--task voice-voxcpm` (a fine-tuned voice) after `scripts/run-heavy.sh`. Every line is checked by speech recognition and re-tried with another seed if it fails. Then:
+With the user's own voice, add `--task voice-quick` (a quick clone) or `--task voice-voxcpm` (a fine-tuned voice) after `scripts/run-heavy.sh`; `voices.mjs` lists each voice's kind. The same `--task` goes on the render commands below, since a render narrates any line that isn't narrated yet. Every line is checked by speech recognition and re-tried with another seed if it fails. Then:
 - A line that fails on a name the recogniser mishears: add the misheard spelling to `video/voice/heard-as.json` and run again.
 - A name the voice says wrongly: add a Written | Said row to the project's `## The voice` table, re-sync (step 5), and run again.
 

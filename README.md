@@ -24,6 +24,7 @@ The kit does three things:
 |---|---|---|
 | The base kit (house voice, speech check, video tools) | about 6.5 GB of models, plus about [[WP8: base install size on disk]] of tools | always |
 | Quick clone of your voice | about 1 GB | only if you want your own voice |
+| Narrating with a fine-tuned voice you made on another Mac | about 5 GB of models plus 1 GB of tools | only if you bring one; 24 GB or more |
 | Fine-tuning your voice | about 5 GB of models plus 2.6 GB of tools | only on a 32 GB Mac |
 | Making your own music | about 9.4 GB | optional; the kit ships a music bed |
 
@@ -71,10 +72,11 @@ Before any heavy job (narrating, rendering, training, making music), the kit che
 Optional parts, any time later (Claude will offer them when you need them):
 
 - `./setup.sh --voice-quick` for a quick clone of your own voice (any Mac).
-- `./setup.sh --voice-train` for fine-tuning your voice (32 GB Macs only; it refuses on a smaller one).
+- `./setup.sh --voice-speak` to narrate with a fine-tuned voice you already made on another Mac (24 GB or more).
+- `./setup.sh --voice-train` for fine-tuning your voice (32 GB Macs only; it refuses on a smaller one). It includes `--voice-speak`.
 - `./setup.sh --music` to make your own music beds.
 
-You can run setup again at any time: it skips what is already done. `./setup.sh --check` shows what is installed without changing anything. Setup is the only step that uses the internet. After it finishes, the kit works offline.
+You can run setup again at any time: it skips what is already done. `./setup.sh --check` shows what is installed without changing anything, and which of your voices can narrate now. Setup is the only step that uses the internet. After it finishes, the kit works offline.
 
 ## Start
 
@@ -83,6 +85,8 @@ In the kit's folder, run `claude` and say hello. Claude checks that setup has ru
 **Make an explainer.** Claude asks for a short name, your sources, who the film is for, how long it should be, which voice and which shape (square, or wide 16:9). It reads every source, writes the script with you, draws each scene, narrates and renders. You get the video, a sheet of stills and a short report saying what to look at.
 
 **Use my own voice.** Claude checks your Mac's memory and tells you what is possible on it. You record on your iPhone with Voice Memos, in a quiet room, from a script in the kit. For a quick clone you read one paragraph three times (about 2 minutes). For a fine-tune you read the whole script (about 25 minutes). Claude checks every recording and tells you if one needs redoing.
+
+**Already made a voice?** If you made a voice with the kit on another Mac, you don't need to record again. A voice is one folder (`voice.json`, a reference clip and, for a fine-tune, its weights). Copy that folder into `voice/voices/` here, by AirDrop or a USB drive, then tell Claude "I have a voice already". Claude checks the folder, installs what that voice needs (a fine-tune needs `./setup.sh --voice-speak` and a Mac with 24 GB or more), plays you a short draft in it, and from then on offers it as the narrator for every film. On a smaller Mac, Claude can make a quick clone from the same folder's reference clip instead.
 
 > **How good is the quick clone?** It is a likeness made from one short reading, not a trained copy of your voice. People who know you will recognise it, but it is not exact: it can drift in tone or pace from line to line, and it may say names differently from you. In tests it scored 0.747 speaker similarity on the harder test lines, against 0.800 for a fine-tune (higher is closer). A fine-tune, on a 32 GB Mac, holds your tone, pace and the way you say names more steadily. Listen to a few lines before you narrate a whole film with either.
 
@@ -121,6 +125,7 @@ Ask Claude for "a quick look" to get a half-size draft, or for one scene on its 
 
 - Everything runs on your Mac. Your sources, scripts, recordings and voices are never uploaded anywhere by the kit.
 - Your recordings and voices stay in `voice/takes/` and `voice/voices/`, which git ignores, so they can't be committed by accident.
+- To use your voice on another Mac, copy its folder there yourself (AirDrop, a USB drive). Don't put it in a git repository, a fork or a shared folder other people can open: a voice made from your recordings can speak as you.
 - Before you publish or share anything from this folder (a fork, a copy, a ZIP), run `scripts/check-repo.sh`. It refuses if it finds audio, voice weights, personal paths or anything else that should stay private.
 - Record only your own voice, or the voice of someone who has clearly agreed to it.
 
