@@ -74,6 +74,7 @@ Before any heavy job (narrating, rendering, training, making music), the kit che
 Optional parts, any time later (Claude will offer them when you need them):
 
 - `./setup.sh --voice-quick` for a quick clone of your own voice (any Mac).
+- `./setup.sh --no-house-voice` to skip the house voice's model (about 4 GB) if you will only narrate with a fine-tuned voice of your own.
 - `./setup.sh --voice-speak` to narrate with a fine-tuned voice you already made on another Mac (24 GB or more).
 - `./setup.sh --voice-train` for fine-tuning your voice (32 GB Macs only; it refuses on a smaller one). It includes `--voice-speak`.
 - `./setup.sh --music` to make your own music beds.
@@ -90,6 +91,8 @@ Setup is the only step that uses the internet, and everything it downloads comes
 - **The renderer's Chrome**: if Google Chrome is installed, the kit uses it and downloads nothing; otherwise Remotion downloads its own headless Chrome (about 150 MB).
 
 If your network inspects HTTPS with its own certificate, set `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` to your organisation's certificate bundle. When a download is refused, setup says which host refused it, the status code, and what to try.
+
+**If Hugging Face is blocked and you have the models elsewhere.** Copy or download them to a folder holding one folder per model, then `./setup.sh --no-house-voice --voice-speak --from <that folder>`. It needs only `VoxCPM2` and `parakeet-tdt-0.6b-v3`, and checks every file's fingerprint. Copies are instant on the same disk. After that, nothing is fetched from Hugging Face.
 
 **Where the models come from.** `models-origin.json` lists every model the kit can fetch: who made it, the country, its licence and what the kit uses it for, so you can check it against your organisation's rules before you start. Today both narration engines (Qwen3-TTS for the house voice and quick clone, VoxCPM2 for a fine-tune) come from China.
 

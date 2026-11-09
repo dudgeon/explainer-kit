@@ -50,3 +50,4 @@ voice/eval/scores*.json
 voice/eval/raw/
 voice/eval/out/
 __pycache__/
+.no-house-voice

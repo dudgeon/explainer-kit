@@ -3,6 +3,8 @@
 #   ./setup.sh                 base: checks your tools, makes the narration Python environment, installs the video
 #                              packages, gets Chrome for the renderer, and fetches the house-voice and
 #                              speech-check models (about 6.5 GB)
+#   ./setup.sh --no-house-voice  skip the house voice's model (Qwen3-TTS, about 4 GB) and narrate only with a fine-tuned
+#                              voice of your own. The choice is remembered in .no-house-voice; --house-voice undoes it.
 #   ./setup.sh --voice-quick   also what the quick clone of your own voice needs (any Mac, 16 GB is fine): the
 #                              take checker's environment (voice/.venv-eval) and the Parakeet and ECAPA models.
 #                              Does not fetch VoxCPM2 or its training environment.
@@ -28,18 +30,24 @@ root="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 for d in /opt/homebrew/bin /usr/local/bin; do [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$PATH:$d" ;; esac; done
 export PATH
 export KIT_MODELS="${KIT_MODELS:-$HOME/Library/Caches/explainer-kit/models}"
+nohouse=0; [ -f "$root/.no-house-voice" ] && nohouse=1
 vquick=0; vspeak=0; vtrain=0; music=0; check=0; from="${KIT_MODELS_FROM:-}"; only=""
 while [ $# -gt 0 ]; do case "$1" in
   --voice-quick) vquick=1; shift ;;
   --voice-speak) vspeak=1; shift ;;
+  --no-house-voice) nohouse=1; housechoice=1; shift ;;
+  --house-voice) nohouse=0; housechoice=1; shift ;;
   --voice-train) vtrain=1; vquick=1; shift ;;
   --voice) echo "setup: --voice is now three options: --voice-quick (quick clone, any Mac), --voice-speak (narrate with a fine-tuned voice you have, 24 GB or larger) and --voice-train (fine-tuning, 32 GB or larger)" >&2; exit 2 ;;
   --music) music=1; shift ;;
   --check|--dry-run) check=1; shift ;;
   --from) from="${2:?--from needs a folder}"; shift 2 ;;
   --only) only="${2:?--only needs a list of steps}"; shift 2 ;;
-  -h|--help) sed -n 2,26p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n 2,28p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "setup: unknown option $1 (see ./setup.sh --help)" >&2; exit 2 ;; esac; done
+if [ "${housechoice:-0}" = 1 ] && [ $check = 0 ]; then
+  if [ $nohouse = 1 ]; then : > "$root/.no-house-voice"; else rm -f "$root/.no-house-voice"; fi
+fi
 [ -z "$from" ] || from="$(cd -P "$from" 2>/dev/null && pwd)" || { echo "setup: --from folder not found" >&2; exit 2; }
 
 want() { [ -z "$only" ] || case ",$only," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
@@ -167,8 +175,10 @@ if want models; then
   [ -z "$from" ] || say "  cloning from $from where a model is there; downloading the rest"
   [ $check = 1 ] || mkdir -p "$KIT_MODELS"
   # Base: the house voice (Qwen3-TTS Base) and the speech check (Parakeet). VoiceDesign and CustomVoice are not needed.
+  base=(Qwen3-TTS-12Hz-1.7B-Base parakeet)
+  if [ $nohouse = 1 ]; then base=(parakeet); say "  house voice: skipped (--no-house-voice); only a fine-tuned voice of your own can narrate"; fi
   while IFS='|' read -r repo dir commit; do [ -n "$repo" ] && get_model "$repo" "$dir" "$commit"
-  done < <(lock_models "$root/video/voice/models.lock.json" Qwen3-TTS-12Hz-1.7B-Base parakeet)
+  done < <(lock_models "$root/video/voice/models.lock.json" "${base[@]}")
   if [ $music = 1 ]; then
     while IFS='|' read -r repo dir commit; do [ -n "$repo" ] && get_model "$repo" "$dir" "$commit"
     done < <(lock_models "$root/video/score/models.lock.json")

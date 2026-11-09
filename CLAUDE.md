@@ -38,6 +38,7 @@ Run every command from this folder (the kit's root).
 - Finished films and stills: `video/out/<name>/`.
 - The look: `video/style/tokens.json` (numbers), `video/style/house.md` (in words), `video/style/taste.md` (what reviewers have said).
 - Voices the user made: `voice/voices/<name>/` (or the folder in `KIT_VOICE_DIR`). A voice is just a folder, so one made on another Mac is copied in, not re-recorded. `node video/pipeline/voices.mjs` lists them, says which are ready and what each needs (light; no lock). The house voice: `video/voice/house/`.
+- If `.no-house-voice` exists, the house voice's model isn't installed (`./setup.sh --no-house-voice`): don't offer the house voice, and use the user's own voice for samples such as `--film example`.
 - When the user has a voice of their own, it is the narrator you recommend first for a new film; the house voice is the fallback.
 
 ## Memory, by size of Mac
