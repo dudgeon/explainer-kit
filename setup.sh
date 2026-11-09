@@ -17,6 +17,10 @@
 #   ./setup.sh --music         also set up making your own music beds (ACE-Step; about 9.4 GB of models)
 #   ./setup.sh --from DIR      clone models you already have on this Mac from DIR (APFS `cp -c`: instant, no extra
 #                              disk) instead of downloading them
+#   ./setup.sh --from-release [TAG|URL]  get the models from the kit's GitHub release (default models-1) instead of
+#                              Hugging Face, for networks that block it. Downloads only what the other options need,
+#                              checks every part and file, then installs as --from does. KIT_MODELS_RELEASE_URL: a
+#                              mirror of the release's files (it turns this on). --keep-downloads keeps the parts.
 #   ./setup.sh --check         change nothing: print what is installed, what is missing and what would be done, and
 #                              which of your voices (voice/voices/ or $KIT_VOICE_DIR) can narrate now
 #   ./setup.sh --only a,b      run only these steps: deps, venv, npm, chrome, models (for repairs and tests)
@@ -42,13 +46,28 @@ while [ $# -gt 0 ]; do case "$1" in
   --music) music=1; shift ;;
   --check|--dry-run) check=1; shift ;;
   --from) from="${2:?--from needs a folder}"; shift 2 ;;
+  --from-release) userel=1; case "${2:-}" in ""|-*) shift ;; *) relsrc="$2"; shift 2 ;; esac ;;
+  --keep-downloads) keepdl=1; shift ;;
   --only) only="${2:?--only needs a list of steps}"; shift 2 ;;
-  -h|--help) sed -n 2,28p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
   *) echo "setup: unknown option $1 (see ./setup.sh --help)" >&2; exit 2 ;; esac; done
 if [ "${housechoice:-0}" = 1 ] && [ $check = 0 ]; then
   if [ $nohouse = 1 ]; then : > "$root/.no-house-voice"; else rm -f "$root/.no-house-voice"; fi
 fi
 [ -z "$from" ] || from="$(cd -P "$from" 2>/dev/null && pwd)" || { echo "setup: --from folder not found" >&2; exit 2; }
+# --from-release: where the release's files are. A tag means this kit's GitHub release; a URL (or
+# KIT_MODELS_RELEASE_URL) is a folder holding the same files, such as a company mirror of them.
+relurl=""
+if [ "${userel:-0}" = 1 ] || [ -n "${KIT_MODELS_RELEASE_URL:-}" ]; then
+  [ -z "$from" ] || { echo "setup: use --from or --from-release, not both" >&2; exit 2; }
+  reltag="$(node -p 'require(process.argv[1]).tag' "$root/models-manifest.json" 2>/dev/null || echo models-1)"
+  case "${relsrc:-}" in
+    http://*|https://*) relurl="$relsrc" ;;
+    "") relurl="${KIT_MODELS_RELEASE_URL:-https://github.com/dudgeon/explainer-kit/releases/download/$reltag}" ;;
+    *) relurl="https://github.com/dudgeon/explainer-kit/releases/download/$relsrc" ;;
+  esac
+  relurl="${relurl%/}"
+fi
 
 want() { [ -z "$only" ] || case ",$only," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 say()  { printf '%s\n' "$*"; }
@@ -152,7 +171,9 @@ get_model() {  # get_model <repo> <dir> <commit>
   local repo="$1" dir="$2" commit="$3" dest="$KIT_MODELS/$2" have=""
   [ -f "$dest/.kit-revision" ] && have="$(cat "$dest/.kit-revision")"
   if [ "$have" = "$commit" ]; then say "  $dir: present ($commit)"; return 0; fi
-  if [ -n "$from" ] && [ -d "$from/$dir" ]; then
+  if [ -n "$relurl" ] && [ $check = 1 ] && case " $relhave " in *" $dir "*) true ;; *) false ;; esac; then
+    say "  $dir: would install from the release (downloaded above)"
+  elif [ -n "$from" ] && [ -d "$from/$dir" ]; then
     act "$dir: clone from $from/$dir (cp -c, no extra disk)" _clone "$from/$dir" "$dest" "$commit"
   elif [ -n "$from" ] && [ ! -d "$from/$dir" ] && [ $check = 1 ]; then
     say "  $dir: not in --from folder; would download $repo@${commit:0:10}"; todo=$((todo + 1))
@@ -170,6 +191,105 @@ _download() {  # uses the narration venv's huggingface_hub; the only network use
   [ -x "$py" ] || { echo "setup: the narration environment is missing; run ./setup.sh first" >&2; return 1; }
   mkdir -p "$2" && "$py" -I "$root/scripts/download_model.py" "$1" "$3" "$2" && echo "$3" > "$2/.kit-revision"
 }
+
+# ---- 4a. Models from the kit's release (--from-release) ---------------------------------------------------------------
+# Downloads, from GitHub (or the mirror in KIT_MODELS_RELEASE_URL), only the models the chosen steps need and doesn't
+# have yet; checks each part's sha256, the joined tar's and then every file's against the kit (lock files and its copy
+# of the manifest); unpacks into $KIT_MODELS/.from-release/models; and then installs from there exactly as --from
+# does. Nothing in this path talks to Hugging Face. Parts are kept until setup finishes, so a broken download resumes.
+relhave=""
+relstage="$KIT_MODELS/.from-release"
+_rel_curl() {  # _rel_curl <url> <file> [curl args...]
+  local u="$1" f="$2"; shift 2
+  curl -fL --retry 5 --retry-delay 3 --retry-all-errors --connect-timeout 30 "$@" -o "$f" "$u"
+}
+_rel_fail() {  # explain a refused download in plain words
+  say "setup: couldn't download $1"
+  say "  The release's files come from github.com (and, after a redirect, from release-assets.githubusercontent.com"
+  say "  or objects.githubusercontent.com). If your network blocks those, ask IT to allow them, or put the release's"
+  say "  files on a server you can reach and set KIT_MODELS_RELEASE_URL to that folder. Run ./setup.sh again to resume."
+}
+_rel_get() {  # _rel_get <model folder name>: download, check and unpack one model from the release
+  local d="$1" name size sha f have tsha="" n=0 parts=()
+  mkdir -p "$relstage/parts" "$relstage/models" || return 1
+  while read -r name size sha; do
+    if [ "$name" = tar ]; then tsha="$size"; continue; fi
+    f="$relstage/parts/$name"; parts+=("$f"); n=$((n + 1))
+    have="$(stat -f %z "$f" 2>/dev/null || echo 0)"
+    [ "$have" -gt "$size" ] && { rm -f "$f"; have=0; }
+    if [ "$have" = "$size" ] && [ "$(shasum -a 256 "$f" | cut -d' ' -f1)" = "$sha" ]; then
+      say "    $name: already downloaded"; continue
+    fi
+    say "    $name ($(awk -v b="$size" 'BEGIN{printf "%.2f GB", b/1e9}'))"
+    if [ "$have" = "$size" ]; then rm -f "$f"; fi        # complete but wrong: start that part again
+    _rel_curl "$relurl/$name" "$f" -C - || { _rel_fail "$relurl/$name"; return 1; }
+    if [ "$(shasum -a 256 "$f" | cut -d' ' -f1)" != "$sha" ]; then
+      say "    $name: the download doesn't match its sha256; fetching it again"
+      rm -f "$f"; _rel_curl "$relurl/$name" "$f" || { _rel_fail "$relurl/$name"; return 1; }
+      [ "$(shasum -a 256 "$f" | cut -d' ' -f1)" = "$sha" ] || { say "setup: $name still doesn't match its sha256; the release or a mirror of it is damaged"; return 1; }
+    fi
+  done < <(node "$root/scripts/model-release.mjs" parts "$relstage/models-manifest.json" "$d")
+  [ $n -gt 0 ] && [ -n "$tsha" ] || return 1
+  [ "$(cat "${parts[@]}" | shasum -a 256 | cut -d' ' -f1)" = "$tsha" ] || { say "setup: $d: the joined parts don't match the tar's sha256"; return 1; }
+  rm -rf "$relstage/models/$d" "$relstage/models/$d.unpack" && mkdir -p "$relstage/models/$d.unpack" || return 1
+  cat "${parts[@]}" | tar -x -f - -C "$relstage/models/$d.unpack" --no-same-owner || { say "setup: $d: unpacking failed"; return 1; }
+  [ -d "$relstage/models/$d.unpack/$d" ] && [ "$(ls -A "$relstage/models/$d.unpack")" = "$d" ] || { say "setup: $d: the archive holds something else"; return 1; }
+  mv "$relstage/models/$d.unpack/$d" "$relstage/models/$d" && rmdir "$relstage/models/$d.unpack" || return 1
+  node "$root/scripts/model-release.mjs" verify "$relstage/models-manifest.json" "$d" "$relstage/models/$d" | sed 's/^/    /'
+  [ "${PIPESTATUS[0]}" = 0 ]
+}
+if [ -n "$relurl" ] && { want models || { [ -z "$only" ] && [ $((vquick + vspeak + vtrain)) -gt 0 ]; }; }; then
+  say "models from the release: $relurl"
+  # What the chosen steps need, as setup's later steps would fetch it.
+  need=()
+  if want models; then
+    pat=(Qwen3-TTS-12Hz-1.7B-Base parakeet); [ "${nohouse:-0}" = 1 ] && pat=(parakeet)
+    while IFS='|' read -r _ dir _; do [ -n "$dir" ] && need+=("$dir"); done < <(lock_models "$root/video/voice/models.lock.json" "${pat[@]}")
+  fi
+  if [ -z "$only" ] && [ $vquick = 1 ]; then need+=(spkrec-ecapa-voxceleb parakeet-tdt-0.6b-v3); fi
+  if [ -z "$only" ] && [ $((vspeak + vtrain)) -gt 0 ]; then
+    task=voice-voxcpm; [ $vtrain = 1 ] && task=train-full
+    if KIT_PREFLIGHT_SIZE_ONLY=1 "$root/scripts/preflight.sh" "$task" >/dev/null 2>&1; then need+=(VoxCPM2)
+    else say "  VoxCPM2: not fetched; this Mac is too small for it (the own-voice step below says why)"; fi
+  fi
+  [ $music = 1 ] && say "  ACE-Step (--music) is not in the release; setup downloads it from Hugging Face as usual"
+  get=(); seen=" "
+  for dir in ${need[@]+"${need[@]}"}; do
+    case "$seen" in *" $dir "*) continue ;; esac; seen="$seen$dir "
+    rev="$(node "$root/scripts/model-release.mjs" lock "$dir" | cut -d'|' -f2)"
+    if [ "$(cat "$KIT_MODELS/$dir/.kit-revision" 2>/dev/null)" = "$rev" ]; then say "  $dir: present"; else get+=("$dir"); fi
+  done
+  if [ ${#get[@]} = 0 ]; then
+    say "  nothing to download"
+  else
+    man="$relstage/models-manifest.json"
+    if [ $check = 1 ]; then man="$(mktemp "${TMPDIR:-/tmp}/kit-manifest.XXXXXX")"; else mkdir -p "$relstage" || exit 1; fi
+    if _rel_curl "$relurl/models-manifest.json" "$man.new" -sS --retry 2 --max-time 60; then mv "$man.new" "$man"
+    else
+      rm -f "$man.new"; _rel_fail "$relurl/models-manifest.json"
+      if [ $check = 1 ] && [ -f "$root/models-manifest.json" ]; then say "  (sizes below are from the kit's own copy of the manifest)"; cp "$root/models-manifest.json" "$man"
+      else exit 2; fi
+    fi
+    total=0
+    while IFS='|' read -r dir bytes nparts; do
+      if [ "$dir" = fail ]; then relbad=1; continue; fi
+      if [ "$dir" = missing ]; then say "  $bytes: not in this release; setup will try Hugging Face for it"; continue; fi
+      total=$((total + bytes)); relhave="$relhave $dir"
+      gbs="$(awk -v b="$bytes" 'BEGIN{printf "%.2f GB", b/1e9}')"
+      if [ $check = 1 ]; then say "  would: download $dir from the release ($gbs in $nparts part(s))"; todo=$((todo + 1))
+      else
+        free=$(( $(df -k "$KIT_MODELS" | awk 'NR==2{print $4}') * 1024 ))
+        [ "$free" -gt $((bytes * 2 + 1000000000)) ] || { say "setup: not enough free disk for $dir: it needs about $(awk -v b="$((bytes * 2))" 'BEGIN{printf "%.0f GB", b/1e9}') while it unpacks."; exit 2; }
+        act "$dir: download from the release ($gbs) and check it" _rel_get "$dir"
+      fi
+    done < <(node "$root/scripts/model-release.mjs" plan "$man" "${get[@]}" || echo "fail|")
+    [ "${relbad:-0}" = 0 ] || { say "setup: the release's manifest doesn't match this kit (above); nothing was installed from it"; exit 2; }
+    say "  $(awk -v b="$total" 'BEGIN{printf "%.2f GB", b/1e9}') from the release in all"
+    [ $check = 1 ] && rm -f "$man"
+    # From here on, install exactly as --from <folder> does (clones, revision stamps, the own-voice checks).
+    [ $check = 1 ] || from="$relstage/models"
+  fi
+fi
 if want models; then
   say "models in $KIT_MODELS"
   [ -z "$from" ] || say "  cloning from $from where a model is there; downloading the rest"
@@ -237,5 +357,9 @@ if [ $check = 1 ]; then
   [ $todo = 0 ] && [ $missing = 0 ] && say "setup --check: everything is in place." || say "setup --check: $todo step(s) would run; nothing was changed."
   [ $missing = 0 ] || exit 2
   exit 0
+fi
+if [ -n "$relurl" ] && [ -d "$relstage" ]; then  # the models are installed; the download folder is no longer needed
+  if [ "${keepdl:-0}" = 1 ]; then rm -rf "$relstage/models"; say "kept the downloaded parts in $relstage/parts (--keep-downloads)"
+  else rm -rf "$relstage"; fi
 fi
 say "setup: done. From now on the kit works offline. Next: ask Claude to make an explainer."

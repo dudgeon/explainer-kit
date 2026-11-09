@@ -1,0 +1,255 @@
+{
+ "format": 1,
+ "tag": "models-1",
+ "note": "Unmodified copies of these models' files at the pinned revisions, for setup.sh --from-release. Each model is one uncompressed tar of its folder, split into parts; join the parts in order (cat), check tar_sha256, then extract.",
+ "models": {
+  "Qwen3-TTS-12Hz-1.7B-Base-bf16": {
+   "repo": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+   "revision": "a6eb4f68e4b056f1215157bb696209bc82a6db48",
+   "lock": "video/voice/models.lock.json",
+   "licence": "Apache-2.0",
+   "made_by": "Qwen team, Alibaba Cloud (MLX conversion by the mlx-community volunteers)",
+   "source": "https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16/tree/a6eb4f68e4b056f1215157bb696209bc82a6db48",
+   "archive": "Qwen3-TTS-12Hz-1.7B-Base-bf16.tar",
+   "tar_size": 4544225280,
+   "tar_sha256": "fab12e5d6f0944d2b064b723895ac8765a603594861d7ac84e53cca3185c0022",
+   "parts": [
+    {
+     "name": "Qwen3-TTS-12Hz-1.7B-Base-bf16.tar.part-aa",
+     "size": 1992294400,
+     "sha256": "0d833025c7fac06a0ba7cb8d21006ea18c0a3eb6811e42fcc8197b35f3ba1fdc"
+    },
+    {
+     "name": "Qwen3-TTS-12Hz-1.7B-Base-bf16.tar.part-ab",
+     "size": 1992294400,
+     "sha256": "7fff7188e3f2840fc9dd8d7c3f78f458b349d7716eb8c2c85152ce5eb7729753"
+    },
+    {
+     "name": "Qwen3-TTS-12Hz-1.7B-Base-bf16.tar.part-ac",
+     "size": 559636480,
+     "sha256": "c792913c45d1016d6fd9db88ccbd2204798bffebe0810622cc46f7f0dadec225"
+    }
+   ],
+   "files": {
+    ".gitattributes": {
+     "size": 1519,
+     "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+    },
+    "README.md": {
+     "size": 1026,
+     "sha256": "cf921813a02b37002f73b636991a52d9385bb4a81a9ff2dc61a178d1f6e27587"
+    },
+    "config.json": {
+     "size": 5317,
+     "sha256": "39ffdadc03c1a7c7f8116ee8830d6a577ac87039edcbd88759b4fcc4db272070"
+    },
+    "generation_config.json": {
+     "size": 245,
+     "sha256": "f1b90b4513f3b34c62851049e2492d7b4c5940daf1276f89c82b8ef04127f3aa"
+    },
+    "merges.txt": {
+     "size": 1671839,
+     "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3"
+    },
+    "model.safetensors": {
+     "size": 3857414009,
+     "sha256": "81fb76175ff74e69be25fef2cc3e54f016df3034f1514c8e1c89da06a3510cff"
+    },
+    "model.safetensors.index.json": {
+     "size": 38742,
+     "sha256": "f5bb337c2f77c5046024c7342ed8d6ade28fdfbab862baf9f13269743b920005"
+    },
+    "preprocessor_config.json": {
+     "size": 127,
+     "sha256": "efdde1022ea9d76928bf7a9cd53139138f5ba2e466e837f08f6105ab1af1c119"
+    },
+    "speech_tokenizer/config.json": {
+     "size": 2336,
+     "sha256": "ee65bb901c876664ab8707c487157aa1a6ee57c65969b28fb5ec9dc211e68167"
+    },
+    "speech_tokenizer/configuration.json": {
+     "size": 76,
+     "sha256": "6bc26d64eb5024b4d1dab5a52371958b429256d6c9d59787f1f5294a54e0cebd"
+    },
+    "speech_tokenizer/model.safetensors": {
+     "size": 682293092,
+     "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258"
+    },
+    "speech_tokenizer/preprocessor_config.json": {
+     "size": 234,
+     "sha256": "fcb3805e597e786d4067706e602f6688524640f8d3396790e2e09b5942fcbdfb"
+    },
+    "tokenizer_config.json": {
+     "size": 7344,
+     "sha256": "dc3c31c3bdaedd5016382bb3cbe07323026775ad51f5a4fb564505992ae4a670"
+    },
+    "vocab.json": {
+     "size": 2776833,
+     "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   }
+  },
+  "parakeet-tdt-0.6b-v3": {
+   "repo": "mlx-community/parakeet-tdt-0.6b-v3",
+   "revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+   "lock": "voice/models.lock.json",
+   "licence": "CC-BY-4.0",
+   "made_by": "NVIDIA (MLX conversion by mlx-community)",
+   "source": "https://huggingface.co/mlx-community/parakeet-tdt-0.6b-v3/tree/ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+   "archive": "parakeet-tdt-0.6b-v3.tar",
+   "tar_size": 2509056000,
+   "tar_sha256": "c064707e61cc2310208aa60b11c2fda86ff4180e171a92d396f57d086a615846",
+   "parts": [
+    {
+     "name": "parakeet-tdt-0.6b-v3.tar.part-aa",
+     "size": 1992294400,
+     "sha256": "f7ac86de25eac6f25c0440f57795bf46b8658abfbb87536fd6f38f390d3ea7bc"
+    },
+    {
+     "name": "parakeet-tdt-0.6b-v3.tar.part-ab",
+     "size": 516761600,
+     "sha256": "87465dbae22c43dadaed57cf6100ffceed81eaeacbe87fcba719d3e16561b3f6"
+    }
+   ],
+   "files": {
+    ".gitattributes": {
+     "size": 1519,
+     "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+    },
+    "README.md": {
+     "size": 1081,
+     "sha256": "724e3ba46903986ff6caeb8fddb7495c06b5a7a8d908f11e43cc0a7e136b5e23"
+    },
+    "config.json": {
+     "size": 244093,
+     "sha256": "f320f1292511f34ec47f513755fe20fd01dbfc09a925d42730e66059a6e1ef4c"
+    },
+    "model.safetensors": {
+     "size": 2508288736,
+     "sha256": "05e01c7f396c298cf7d23f61da7b504adeab698f0aaeafd9c82d198625464592"
+    },
+    "tokenizer.model": {
+     "size": 360916,
+     "sha256": "eacec2b0a77f336d4a2ca4a25a7047575d3c2b74de47e997f4c205126ed3135e"
+    },
+    "tokenizer.vocab": {
+     "size": 101024,
+     "sha256": "41130ff456706304a1adec782ccc9e003c4d417e8e324353d281be958cac4e17"
+    },
+    "vocab.txt": {
+     "size": 46772,
+     "sha256": "3cde1409fd78783a79b29ed4d32da57c746993856f7c8263bcb905d2e5839db7"
+    }
+   }
+  },
+  "VoxCPM2": {
+   "repo": "openbmb/VoxCPM2",
+   "revision": "32279effe8c19989596f05d353d1447f51d9e915",
+   "lock": "voice/models.lock.json",
+   "licence": "Apache-2.0",
+   "made_by": "OpenBMB (ModelBest and Tsinghua University)",
+   "source": "https://huggingface.co/openbmb/VoxCPM2/tree/32279effe8c19989596f05d353d1447f51d9e915",
+   "archive": "VoxCPM2.tar",
+   "tar_size": 4960747520,
+   "tar_sha256": "ae2b59e0c92f7e3e1fa6ac22b61c926e353ab09271a87cb14f41d2e754c5cc9f",
+   "parts": [
+    {
+     "name": "VoxCPM2.tar.part-aa",
+     "size": 1992294400,
+     "sha256": "5f80defa5467924a35d902ccdd3222037d90cc7f247800acad5180fcc75a6ea4"
+    },
+    {
+     "name": "VoxCPM2.tar.part-ab",
+     "size": 1992294400,
+     "sha256": "0294649cb670ee351e84a79679445da15077afb5f2a81402a65f1b4413b46b59"
+    },
+    {
+     "name": "VoxCPM2.tar.part-ac",
+     "size": 976158720,
+     "sha256": "c2437a8daa42171e049d7581d514997ccf544da9c0054ab48b1afd73a1f1322d"
+    }
+   ],
+   "files": {
+    ".gitattributes": {
+     "size": 1519,
+     "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+    },
+    "README.md": {
+     "size": 7939,
+     "sha256": "c18d2ffbfb2f0aec770481c967842aee6c200cde65f6b033efd892a849986fda"
+    },
+    "audiovae.pth": {
+     "size": 376951122,
+     "sha256": "94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1"
+    },
+    "config.json": {
+     "size": 4336,
+     "sha256": "405f0dcd92f7feba6011ed4eac5c8d4f74cba9712f07fd5cfa3063bbdd95402c"
+    },
+    "model.safetensors": {
+     "size": 4580080592,
+     "sha256": "f7f964cfa9da23653baec6e6f7750719977ad944ed9f95fe52fe3a620506891d"
+    },
+    "special_tokens_map.json": {
+     "size": 1632,
+     "sha256": "068594063e37662c02b21acf42ebb334ef6a74fb810e68a2368f88f08351de76"
+    },
+    "tokenization_voxcpm2.py": {
+     "size": 2895,
+     "sha256": "84489ea32b6ee0cae22ed5480cacb6df85c46624c3119be9a2021c3649a12729"
+    },
+    "tokenizer.json": {
+     "size": 3676772,
+     "sha256": "f8984687e4a92a3503d521396d454b7d68e9fdaab2a0288eb3536c7c1aa4bc20"
+    },
+    "tokenizer_config.json": {
+     "size": 5059,
+     "sha256": "e78a3ebb48a0b9437efd1823b6b726c823da89e49dd8bcc90c02419d9baa772b"
+    }
+   }
+  },
+  "spkrec-ecapa-voxceleb": {
+   "repo": "speechbrain/spkrec-ecapa-voxceleb",
+   "revision": "0f99f2d0ebe89ac095bcc5903c4dd8f72b367286",
+   "lock": "voice/models.lock.json",
+   "licence": "Apache-2.0",
+   "made_by": "SpeechBrain, an open-source academic project",
+   "source": "https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb/tree/0f99f2d0ebe89ac095bcc5903c4dd8f72b367286",
+   "archive": "spkrec-ecapa-voxceleb.tar",
+   "tar_size": 83333120,
+   "tar_sha256": "2e0be388da7588afc295a15a97c42a0efc003dc14720ad7e97b48841510f81a0",
+   "parts": [
+    {
+     "name": "spkrec-ecapa-voxceleb.tar.part-aa",
+     "size": 83333120,
+     "sha256": "2e0be388da7588afc295a15a97c42a0efc003dc14720ad7e97b48841510f81a0"
+    }
+   ],
+   "files": {
+    "README.md": {
+     "size": 5377,
+     "sha256": "00f58c3cbd7a7510de9374080da0e82a4c4e8f4df567f7338fe6efe108be705a"
+    },
+    "embedding_model.ckpt": {
+     "size": 83316686,
+     "sha256": "0575cb64845e6b9a10db9bcb74d5ac32b326b8dc90352671d345e2ee3d0126a2"
+    },
+    "hyperparams.yaml": {
+     "size": 1919,
+     "sha256": "6f78854fa04ba59e761437b76a2575d3aba5e5016de3e9b69f0c9a5077fb1a41"
+    },
+    "mean_var_norm_emb.ckpt": {
+     "size": 1921,
+     "sha256": "cd70225b05b37be64fc5a95e24395d804231d43f74b2e1e5a513db7b69b34c33"
+    }
+   }
+  }
+ },
+ "extras": [
+  {
+   "name": "LICENSE-Apache-2.0.txt",
+   "size": 11358,
+   "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  }
+ ]
+}

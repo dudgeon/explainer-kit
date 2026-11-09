@@ -17,6 +17,9 @@ endpoint = os.environ.get("HF_ENDPOINT") or "https://huggingface.co"
 host = urlparse(endpoint).netloc or endpoint
 MIRROR = ("Behind a company network, point the kit at your model mirror: set HF_ENDPOINT to its address and run setup "
           "again (the README's \"Behind a company network\" section).")
+# The kit's own release carries the models setup needs, from GitHub instead of Hugging Face.
+RELEASE = "If your network blocks Hugging Face, run ./setup.sh --from-release (add the same options you used this time)."
+IS_HF = host.endswith("huggingface.co") or host.endswith("hf.co")
 
 
 def explain(e):
@@ -29,7 +32,7 @@ def explain(e):
     what = f"{a.repo} at {a.revision[:10]}"
     if status in (401, 403):
         return [f"{where} refused the download of {what} (HTTP {status}).",
-                "The host wants a sign-in, or your network blocks this model.", MIRROR]
+                "The host wants a sign-in, or your network blocks this model.", RELEASE, MIRROR]
     if status == 404:
         return [f"{where} has no {what} (HTTP 404).",
                 "A mirror may not carry this model, or not this exact version. The kit pins each model to one version "
@@ -37,11 +40,15 @@ def explain(e):
     if status:
         return [f"{where} answered HTTP {status} for {what}.", "Try again in a while; if it keeps failing: " + MIRROR]
     if "ssl" in text or "certificate" in text:
-        return [f"The certificate check for {where} failed.",
+        return [f"The certificate check for {where} failed.", RELEASE,
                 "A company network that inspects traffic needs its own certificate bundle: set SSL_CERT_FILE and "
                 "REQUESTS_CA_BUNDLE to it. Inside an agent's sandbox (Claude Code's, say) certificate checks fail too: "
                 "run ./setup.sh in Terminal."]
     if any(w in text for w in ("connection", "resolve", "timed out", "timeout", "network", "proxy", "offline")):
+        if IS_HF:
+            return ["Hugging Face did not answer; if your network blocks it, run ./setup.sh --from-release",
+                    f"(couldn't reach {where} to download {what}; add the same options you used this time.)",
+                    "Otherwise check the internet connection and any proxy settings (HTTPS_PROXY). " + MIRROR]
         return [f"Couldn't reach {where} to download {what}.",
                 "Check the internet connection and any proxy settings (HTTPS_PROXY). " + MIRROR]
     return [f"Downloading {what} from {where} failed: {type(e).__name__}: {str(e).splitlines()[0] if str(e) else ''}",

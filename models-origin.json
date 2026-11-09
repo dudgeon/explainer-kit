@@ -1,5 +1,5 @@
 {
-  "_note": "Who made each model the kit can fetch, and where, so an organisation that restricts models by origin can check without research. Publishers are as the model cards name them; countries are the publishers' home countries from public information, not from the cards, so confirm them in your own review. The revisions are pinned in the lock files named under `lock`. `setup` is the setup.sh option that fetches the model; `role` is what the kit uses it for.",
+  "_note": "Who made each model the kit can fetch, and where, so an organisation that restricts models by origin can check without research. Publishers are as the model cards name them; countries are the publishers' home countries from public information, not from the cards, so confirm them in your own review. The revisions are pinned in the lock files named under `lock`. `setup` is the setup.sh option that fetches the model; `role` is what the kit uses it for. `release` is the kit's GitHub release that carries an unmodified copy of the model at that revision (setup.sh --from-release), or null if no release does.",
   "models": [
     {
       "repo": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
@@ -8,6 +8,7 @@
       "licence": "Apache-2.0",
       "lock": "video/voice/models.lock.json",
       "setup": "./setup.sh (always)",
+      "release": "models-1",
       "role": "narration: the house voice, and the quick clone of your own voice"
     },
     {
@@ -17,6 +18,7 @@
       "licence": "Apache-2.0",
       "lock": "video/voice/models.lock.json",
       "setup": "not fetched by setup",
+      "release": null,
       "role": "designing a new synthetic voice from a text description (how the house voice was made)"
     },
     {
@@ -26,6 +28,7 @@
       "licence": "CC-BY-4.0",
       "lock": "video/voice/models.lock.json",
       "setup": "./setup.sh (always)",
+      "release": "models-1",
       "role": "speech check: confirms each narrated line says what the script says"
     },
     {
@@ -35,6 +38,7 @@
       "licence": "Apache-2.0",
       "lock": "voice/models.lock.json",
       "setup": "./setup.sh --voice-speak or --voice-train",
+      "release": "models-1",
       "role": "narration and training: a fine-tuned copy of your own voice"
     },
     {
@@ -44,6 +48,7 @@
       "licence": "Apache-2.0",
       "lock": "voice/models.lock.json",
       "setup": "./setup.sh --voice-quick or --voice-train",
+      "release": "models-1",
       "role": "measuring how close a voice sounds to its reference recording"
     },
     {
@@ -53,6 +58,7 @@
       "licence": "MIT",
       "lock": "video/score/models.lock.json",
       "setup": "./setup.sh --music (optional; the kit ships a music bed)",
+      "release": null,
       "role": "generating a music bed"
     }
   ],

@@ -83,7 +83,19 @@ You can run setup again at any time: it skips what is already done. `./setup.sh 
 
 ### Behind a company network or a model mirror
 
-Setup is the only step that uses the internet, and everything it downloads comes through three tools, each of which can be pointed at your organisation's own mirror:
+**If Hugging Face is blocked at work, get the models from the kit's own release instead.** Run setup with `--from-release`:
+
+```
+./setup.sh --from-release
+```
+
+Add the options you need as usual, for example `./setup.sh --from-release --voice-quick` for a quick clone of your own voice, or `--voice-speak` for a fine-tuned voice. Setup then downloads the models from GitHub (the release [models-1](https://github.com/dudgeon/explainer-kit/releases/tag/models-1), about 7 GB for the base kit and up to 12 GB with every own-voice option), only the ones your options need, and never contacts Hugging Face. It checks every piece against fingerprints kept in the kit, so a damaged or different file is refused, and a broken download picks up where it stopped when you run setup again. `./setup.sh --check --from-release` shows what it would download and how much.
+
+- The downloads come from `github.com`, which hands them over to `release-assets.githubusercontent.com` or `objects.githubusercontent.com`. If those are blocked too, ask IT to allow them, or to copy the release's files to a server you can reach; then set `KIT_MODELS_RELEASE_URL` to that folder (for example `export KIT_MODELS_RELEASE_URL=https://files.example.com/explainer-kit/models-1`) and run `./setup.sh --from-release`.
+- The release has the house voice, the speech check, and the models for your own voice (quick clone and fine-tune). It does not have the music model (`--music` still needs Hugging Face; the kit ships a music bed, so you rarely need it).
+- Python packages, and Python 3.12 itself, don't come from Hugging Face or the release: they come from PyPI and from uv's own download hosts. If those are blocked too, use the mirror settings below.
+
+Otherwise, everything setup downloads comes through three tools, each of which can be pointed at your organisation's own mirror:
 
 - **Models** come from Hugging Face. Set `HF_ENDPOINT` to your mirror's address (for example `export HF_ENDPOINT=https://your-mirror.example.com/huggingface`). The mirror needs the exact versions the kit pins (the lock files); setup checks every file's fingerprint, so another version won't load.
 - **Python packages** come through `uv`. Set `UV_INDEX_URL` (or `UV_DEFAULT_INDEX`) to your package mirror, or put it in `~/.config/uv/uv.toml`. uv also downloads Python 3.12 itself; `UV_PYTHON_INSTALL_MIRROR` points that at a mirror.
@@ -151,7 +163,7 @@ Ask Claude for "a quick look" to get a half-size draft, or for one scene on its 
 
 - The kit's own code and text: MIT (see `LICENSE`).
 - **Remotion**, which renders the films, has its own licence. It is free for individuals, for companies of up to 3 people, and for non-profits. Larger companies need a Remotion Company License. The licence applies to whoever renders, so check it if you make films for work. Its terms change slightly at version 5.0.
-- The speech models are downloaded at setup, not shipped: Qwen3-TTS (Apache-2.0), Parakeet (CC-BY-4.0), VoxCPM2 (Apache-2.0), the ECAPA speaker model (Apache-2.0). The optional music model, ACE-Step, is MIT.
+- The speech models are downloaded at setup, not kept in this repository: Qwen3-TTS (Apache-2.0), Parakeet (CC-BY-4.0), VoxCPM2 (Apache-2.0), the ECAPA speaker model (Apache-2.0). The release `models-1` carries unmodified copies of them, with their licences and attributions. The optional music model, ACE-Step, is MIT.
 - **The house voice and the music bed.** The house voice is synthetic: it was designed with Qwen3-TTS VoiceDesign from a written description, and nobody's recording is in it. Its reference clip and the shipped music bed are released as CC0 (public domain). CC0 removes the kit's own claims, but it cannot remove the terms of the models that made the audio, and we have not confirmed what the model makers say about generated audio. If that matters for your use, you can:
   - design a different house voice from your own description, or use your own voice,
   - make your own music bed with `./setup.sh --music`, or
