@@ -150,10 +150,12 @@ if want npm; then
 fi
 if want chrome; then
   say "chrome for the renderer"
-  ch="$(ls -d "$root"/video/node_modules/.remotion/chrome-headless-shell* 2>/dev/null | head -1)"
-  if [ -n "$ch" ]; then say "  Remotion's own headless Chrome: ok"
-  elif [ -d "/Applications/Google Chrome.app" ]; then say "  Google Chrome is installed; Remotion will use it"
-  else act "download Remotion's headless Chrome (about 150 MB): npx remotion browser ensure" bash -c "cd '$root/video' && npx remotion browser ensure"; fi
+  # Remotion renders with its own headless Chrome, never the installed Google Chrome: without it, the first render
+  # would download it mid-build (from Google's storage servers). So setup fetches it now, and checks for the program
+  # itself, since an interrupted download leaves the folder behind.
+  ch="$(ls "$root"/video/node_modules/.remotion/chrome-headless-shell/*/chrome-headless-shell-*/chrome-headless-shell 2>/dev/null | head -1)"
+  if [ -n "$ch" ] && [ -x "$ch" ]; then say "  Remotion's own headless Chrome: ok"
+  else act "download Remotion's headless Chrome (about 190 MB): npx remotion browser ensure" bash -c "cd '$root/video' && npx remotion browser ensure"; fi
 fi
 
 # ---- 4. Models -------------------------------------------------------------------------------------------------------
